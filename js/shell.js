@@ -13,6 +13,8 @@
     const state = ns.State.get();
     const leftMode = getSideMode(state, "leftBar");
     const rightMode = getSideMode(state, "rightBar");
+    const headerMode = getChromeMode(state, "header");
+    const footerMode = getChromeMode(state, "footer");
 
     return `
       <div class="studio-shell">
@@ -20,7 +22,7 @@
           ${ns.State.areas.map((area) => renderToolbarControl(area, state)).join("")}
         </div>
         <div class="app-frame ${frameClasses(state)}">
-          ${state.areas.header.isOpen ? renderHeader(state, route) : ""}
+          ${headerMode !== "hidden" ? renderHeader(state, route) : ""}
           <div class="app-body">
             ${leftMode !== "hidden" ? renderSide("leftBar", state, route) : ""}
             <main class="content-host" id="content" tabindex="-1">
@@ -28,7 +30,7 @@
             </main>
             ${rightMode !== "hidden" ? renderSide("rightBar", state, route) : ""}
           </div>
-          ${state.areas.footer.isOpen ? renderFooter(state, route) : ""}
+          ${footerMode !== "hidden" ? renderFooter(state, route) : ""}
         </div>
       </div>
     `;
@@ -36,11 +38,13 @@
 
   function frameClasses(state) {
     const classes = ns.State.areas
-      .filter((area) => !ns.State.sideAreaIds.has(area.id) && !state.areas[area.id].isOpen)
+      .filter((area) => !ns.State.sideAreaIds.has(area.id) && !ns.State.chromeAreaIds.has(area.id) && !state.areas[area.id].isOpen)
       .map((area) => `is-${area.id}-closed`);
 
     classes.push(`is-leftBar-${getSideMode(state, "leftBar")}`);
     classes.push(`is-rightBar-${getSideMode(state, "rightBar")}`);
+    classes.push(`is-header-${getChromeMode(state, "header")}`);
+    classes.push(`is-footer-${getChromeMode(state, "footer")}`);
 
     return classes.join(" ");
   }
@@ -49,9 +53,17 @@
     return state.areas[areaId].mode || (state.areas[areaId].isOpen ? "visible" : "hidden");
   }
 
+  function getChromeMode(state, areaId) {
+    return state.areas[areaId].mode || (state.areas[areaId].isOpen ? "visible" : "hidden");
+  }
+
   function renderToolbarControl(area, state) {
     if (ns.State.sideAreaIds.has(area.id)) {
       return renderSideModePicker(area, getSideMode(state, area.id), "toolbar");
+    }
+
+    if (ns.State.chromeAreaIds.has(area.id)) {
+      return renderChromeModePicker(area, getChromeMode(state, area.id), "toolbar");
     }
 
     return renderAreaToggle(area, state.areas[area.id].isOpen);
@@ -81,22 +93,41 @@
     `;
   }
 
-  function renderHeader(state, route) {
+  function renderChromeModePicker(area, currentMode, context) {
     return `
-      <header class="chrome-zone chrome-header">
-        ${renderSlot("header", "left", state, route)}
-        ${renderSlot("header", "center", state, route)}
-        ${renderSlot("header", "right", state, route)}
+      <div class="side-mode-picker side-mode-picker-${context} chrome-mode-picker" aria-label="${escapeHtml(area.label)} mode">
+        <span>${escapeHtml(area.label)}</span>
+        <div>
+          ${ns.State.chromeModes.map((mode) => `
+            <button class="${mode.id === currentMode ? "is-active" : ""}" type="button" data-action="set-chrome-mode" data-area="${area.id}" data-mode="${mode.id}" title="${escapeHtml(mode.label)}">
+              ${escapeHtml(mode.label.slice(0, 1))}
+            </button>
+          `).join("")}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderHeader(state, route) {
+    const mode = getChromeMode(state, "header");
+
+    return `
+      <header class="chrome-zone chrome-header chrome-zone-mode-${mode}" data-mode="${mode}">
+        ${renderSlot("header", "left", state, route, mode)}
+        ${renderSlot("header", "center", state, route, mode)}
+        ${renderSlot("header", "right", state, route, mode)}
       </header>
     `;
   }
 
   function renderFooter(state, route) {
+    const mode = getChromeMode(state, "footer");
+
     return `
-      <footer class="chrome-zone chrome-footer">
-        ${renderSlot("footer", "left", state, route)}
-        ${renderSlot("footer", "center", state, route)}
-        ${renderSlot("footer", "right", state, route)}
+      <footer class="chrome-zone chrome-footer chrome-zone-mode-${mode}" data-mode="${mode}">
+        ${renderSlot("footer", "left", state, route, mode)}
+        ${renderSlot("footer", "center", state, route, mode)}
+        ${renderSlot("footer", "right", state, route, mode)}
       </footer>
     `;
   }
@@ -114,29 +145,34 @@
     `;
   }
 
-  function renderSlot(areaId, slot, state, route) {
+  function renderSlot(areaId, slot, state, route, areaMode) {
     const items = state.areas[areaId].slots[slot];
     const axis = ns.State.areas.find((area) => area.id === areaId).axis;
+    const mode = areaMode || state.areas[areaId].mode || "visible";
 
     return `
       <div class="shell-slot shell-slot-${slot} shell-slot-${axis}" data-area="${areaId}" data-slot="${slot}">
-        ${items.length ? items.map((instance) => renderSlotInstance(instance, areaId, axis, route)).join("") : `
+        ${items.length ? items.map((instance) => renderSlotInstance(instance, areaId, axis, mode, route)).join("") : `
           <span class="empty-slot">${escapeHtml(ns.State.slotLabels[slot])}</span>
         `}
       </div>
     `;
   }
 
-  function renderSlotInstance(instance, areaId, axis, route) {
+  function renderSlotInstance(instance, areaId, axis, mode, route) {
+    const item = ns.Catalog.getItem(instance.itemId);
+
+    if (axis === "horizontal" && mode === "compact") {
+      return renderCompactItem(item, route, "compact-item");
+    }
+
     if (axis !== "vertical") {
       return renderShellItem(instance, areaId, route);
     }
 
-    const item = ns.Catalog.getItem(instance.itemId);
-
     return `
       <div class="rail-item" title="${escapeHtml(item.label)}">
-        ${renderRailIcon(item)}
+        ${renderCompactItem(item, route, "rail-icon")}
         <div class="rail-content">
           ${renderShellItem(instance, areaId, route)}
         </div>
@@ -144,7 +180,7 @@
     `;
   }
 
-  function renderRailIcon(item) {
+  function renderCompactItem(item, route, className) {
     const label = item.label
       .split(/\s+/)
       .filter(Boolean)
@@ -152,16 +188,18 @@
       .map((part) => part[0])
       .join("")
       .toUpperCase();
-    const href = getRailHref(item.id);
+    const displayLabel = item.id === "brand" ? "O" : label;
+    const href = getCompactHref(item.id, route);
+    const badge = item.id === "notifications" ? `<span class="compact-badge">7</span>` : "";
 
     if (href) {
-      return `<a class="rail-icon" href="${href}" aria-label="${escapeHtml(item.label)}">${escapeHtml(label)}</a>`;
+      return `<a class="${className}" href="${href}" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(displayLabel)}${badge}</a>`;
     }
 
-    return `<button class="rail-icon" type="button" aria-label="${escapeHtml(item.label)}">${escapeHtml(label)}</button>`;
+    return `<button class="${className}" type="button" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(displayLabel)}${badge}</button>`;
   }
 
-  function getRailHref(itemId) {
+  function getCompactHref(itemId, route) {
     const hrefs = {
       brand: "#/app/dashboard",
       breadcrumbs: "#/app/dashboard",
@@ -173,6 +211,10 @@
       "inspector-summary": "#/config",
       "activity-feed": "#/app/workflows"
     };
+
+    if (itemId === "global-search") {
+      return route.name === "config" ? "#/config" : `#/app/${route.page || "dashboard"}`;
+    }
 
     return hrefs[itemId] || "";
   }
@@ -325,6 +367,7 @@
 
   ns.Shell = {
     render,
-    renderSideModePicker
+    renderSideModePicker,
+    renderChromeModePicker
   };
 })();

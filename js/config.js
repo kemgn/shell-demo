@@ -1,15 +1,22 @@
 (function () {
   const ns = window.ShellStudio || (window.ShellStudio = {});
   const { escapeHtml } = ns.Utils;
+  let activeAreaId = "header";
 
   function render() {
     const state = ns.State.get();
+    const activeArea = getActiveArea();
 
     return `
       <div class="config-page page-enter">
         <section class="config-layout">
-          <div class="region-editor-stack">
-            ${ns.State.areas.map((area) => renderAreaEditor(area, state)).join("")}
+          <div class="config-editor-panel">
+            <nav class="config-tabs" aria-label="Shell regions">
+              ${ns.State.areas.map((area) => renderAreaTab(area, state)).join("")}
+            </nav>
+            <div class="config-tab-body">
+              ${renderAreaEditor(activeArea, state)}
+            </div>
           </div>
           <aside class="catalog-panel">
             <div class="catalog-panel-head">
@@ -26,6 +33,32 @@
     `;
   }
 
+  function getActiveArea() {
+    return ns.State.areas.find((area) => area.id === activeAreaId) || ns.State.areas[0];
+  }
+
+  function setActiveArea(areaId) {
+    if (!ns.State.areas.some((area) => area.id === areaId)) {
+      return;
+    }
+
+    activeAreaId = areaId;
+  }
+
+  function renderAreaTab(area, state) {
+    const areaState = state.areas[area.id];
+    const itemCount = ns.State.slotsByArea[area.id]
+      .reduce((total, slot) => total + areaState.slots[slot].length, 0);
+    const isActive = area.id === getActiveArea().id;
+
+    return `
+      <button class="config-tab ${isActive ? "is-active" : ""}" type="button" data-action="set-config-tab" data-area="${area.id}">
+        <span>${escapeHtml(area.label)}</span>
+        <small>${itemCount}</small>
+      </button>
+    `;
+  }
+
   function renderAreaEditor(area, state) {
     const areaState = state.areas[area.id];
     const slots = ns.State.slotsByArea[area.id];
@@ -39,6 +72,8 @@
           </div>
           ${ns.State.sideAreaIds.has(area.id)
             ? ns.Shell.renderSideModePicker(area, areaState.mode || "visible", "config")
+            : ns.State.chromeAreaIds.has(area.id)
+              ? ns.Shell.renderChromeModePicker(area, areaState.mode || "visible", "config")
             : `<button class="ghost-button" type="button" data-action="toggle-area" data-area="${area.id}">
                 ${areaState.isOpen ? "Collapse" : "Expand"}
               </button>`}
@@ -120,6 +155,7 @@
   }
 
   ns.Config = {
-    render
+    render,
+    setActiveArea
   };
 })();

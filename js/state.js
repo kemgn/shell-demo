@@ -17,7 +17,14 @@
     { id: "hidden", label: "Hidden" }
   ];
 
+  const chromeModes = [
+    { id: "visible", label: "Visible" },
+    { id: "compact", label: "Compact" },
+    { id: "hidden", label: "Hidden" }
+  ];
+
   const sideAreaIds = new Set(["leftBar", "rightBar"]);
+  const chromeAreaIds = new Set(["header", "footer"]);
 
   const slotsByArea = {
     header: ["left", "center", "right"],
@@ -40,6 +47,7 @@
     areas: {
       header: {
         isOpen: true,
+        mode: "visible",
         slots: {
           left: [
             { id: "default-brand", itemId: "brand" },
@@ -89,6 +97,7 @@
       },
       footer: {
         isOpen: true,
+        mode: "visible",
         slots: {
           left: [
             { id: "default-environment-chip", itemId: "environment-chip" }
@@ -128,10 +137,18 @@
         : sourceArea.isOpen === false
           ? "hidden"
           : "visible";
+      const sourceChromeMode = chromeModes.some((mode) => mode.id === sourceArea.mode)
+        ? sourceArea.mode
+        : sourceArea.isOpen === false
+          ? "hidden"
+          : "visible";
 
       if (sideAreaIds.has(area.id)) {
         next.areas[area.id].mode = sourceMode;
         next.areas[area.id].isOpen = sourceMode !== "hidden";
+      } else if (chromeAreaIds.has(area.id)) {
+        next.areas[area.id].mode = sourceChromeMode;
+        next.areas[area.id].isOpen = sourceChromeMode !== "hidden";
       } else {
         next.areas[area.id].isOpen = sourceArea.isOpen !== false;
       }
@@ -211,12 +228,30 @@
         return;
       }
 
+      if (chromeAreaIds.has(areaId)) {
+        const nextMode = draft.areas[areaId].mode === "hidden" ? "visible" : "hidden";
+        draft.areas[areaId].mode = nextMode;
+        draft.areas[areaId].isOpen = nextMode !== "hidden";
+        return;
+      }
+
       draft.areas[areaId].isOpen = !draft.areas[areaId].isOpen;
     });
   }
 
   function setSideMode(areaId, mode) {
     if (!sideAreaIds.has(areaId) || !sideModes.some((sideMode) => sideMode.id === mode)) {
+      return;
+    }
+
+    commit((draft) => {
+      draft.areas[areaId].mode = mode;
+      draft.areas[areaId].isOpen = mode !== "hidden";
+    });
+  }
+
+  function setChromeMode(areaId, mode) {
+    if (!chromeAreaIds.has(areaId) || !chromeModes.some((chromeMode) => chromeMode.id === mode)) {
       return;
     }
 
@@ -270,7 +305,9 @@
   ns.State = {
     areas,
     sideModes,
+    chromeModes,
     sideAreaIds,
+    chromeAreaIds,
     slotsByArea,
     slotLabels,
     defaultState,
@@ -280,6 +317,7 @@
     reset,
     toggleArea,
     setSideMode,
+    setChromeMode,
     addItem,
     removeItem,
     moveItem

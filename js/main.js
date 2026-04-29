@@ -28,6 +28,17 @@
         return;
       }
 
+      if (action === "set-chrome-mode") {
+        ns.State.setChromeMode(control.dataset.area, control.dataset.mode);
+        return;
+      }
+
+      if (action === "set-config-tab") {
+        ns.Config.setActiveArea(control.dataset.area);
+        ns.Router.render();
+        return;
+      }
+
       if (action === "reset-config") {
         ns.State.reset();
         return;
