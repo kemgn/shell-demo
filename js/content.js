@@ -4,21 +4,21 @@
 
   const pages = {
     dashboard: {
-      label: "Dashboard",
-      eyebrow: "Output screen",
-      title: "Customer operations cockpit",
+      label: "Pano",
+      eyebrow: "Çıktı ekranı",
+      title: "Müşteri operasyon panosu",
       summary: "Dummy KPI kartları, çıktı uygulamasının no-code platformdan geldiğini hissettiren merkezi ekran."
     },
     records: {
-      label: "Records",
-      eyebrow: "Generated data app",
-      title: "Customer records",
+      label: "Kayıtlar",
+      eyebrow: "Üretilmiş veri uygulaması",
+      title: "Müşteri kayıtları",
       summary: "Tablo, durum rozeti ve hızlı aksiyonlarla üretilmiş iş uygulaması simülasyonu."
     },
     workflows: {
-      label: "Workflows",
-      eyebrow: "Automation output",
-      title: "Workflow monitor",
+      label: "İş akışları",
+      eyebrow: "Otomasyon çıktısı",
+      title: "İş akışı izleme",
       summary: "Akış adımları, otomasyon sağlığı ve tetikleme kayıtları için dummy görünüm."
     }
   };
@@ -34,57 +34,57 @@
 
     if (route.page === "records") {
       return renderAppPage("records", {
-        cta: "New record",
+        cta: "Yeni kayıt",
         stats: [
-          ["Records", "18.4K", "Synced"],
-          ["Views", "6", "Generated"],
-          ["Changes", "14", "Today"]
+          ["Kayıt", "18.4K", "Senkron"],
+          ["Görünüm", "6", "Üretildi"],
+          ["Değişiklik", "14", "Bugün"]
         ],
         rows: [
-          ["ACME Field Service", "Live", "12 modules"],
-          ["Northwind Ops", "Draft", "8 modules"],
-          ["Contoso Finance", "Review", "15 modules"],
-          ["Fabrikam Desk", "Live", "6 modules"]
+          ["ACME saha servisi", "Yayında", "12 modül"],
+          ["Northwind operasyon", "Taslak", "8 modül"],
+          ["Contoso finans", "İncelemede", "15 modül"],
+          ["Fabrikam masaüstü", "Yayında", "6 modül"]
         ],
-        sideTitle: "Selected record",
-        sideLines: ["Customer data app", "4 visible sections", "No-code generated"]
+        sideTitle: "Seçili kayıt",
+        sideLines: ["Müşteri veri uygulaması", "4 görünür bölüm", "No-code üretildi"]
       });
     }
 
     if (route.page === "workflows") {
       return renderAppPage("workflows", {
-        cta: "Run flow",
+        cta: "Akışı çalıştır",
         stats: [
-          ["Runs", "324", "This week"],
-          ["Failed", "3", "Needs review"],
-          ["Avg time", "1.8m", "Healthy"]
+          ["Çalışma", "324", "Bu hafta"],
+          ["Başarısız", "3", "İnceleme gerekli"],
+          ["Ort. süre", "1.8 dk", "Sağlıklı"]
         ],
         rows: [
-          ["Trigger", "Complete", "Webhook received"],
-          ["Validate", "Complete", "Schema rules checked"],
-          ["Route", "Active", "Finance lane"],
-          ["Publish", "Waiting", "Approval required"]
+          ["Tetikleyici", "Tamamlandı", "Webhook alındı"],
+          ["Doğrulama", "Tamamlandı", "Şema kuralları kontrol edildi"],
+          ["Yönlendirme", "Aktif", "Finans kanalı"],
+          ["Yayın", "Bekliyor", "Onay gerekli"]
         ],
-        sideTitle: "Flow context",
-        sideLines: ["4 automation steps", "2 conditional branches", "Last run 14:32"]
+        sideTitle: "Akış bağlamı",
+        sideLines: ["4 otomasyon adımı", "2 koşullu dal", "Son çalışma 14:32"]
       });
     }
 
     return renderAppPage("dashboard", {
-      cta: "Configure shell",
+      cta: "Uygulama kabuğunu yapılandır",
       stats: [
-        ["Apps", "42", "Live"],
-        ["Health", "97%", "Stable"],
-        ["Tasks", "8", "Open"]
+        ["Uygulama", "42", "Yayında"],
+        ["Sağlık", "97%", "Kararlı"],
+        ["Görev", "8", "Açık"]
       ],
       rows: [
-        ["Customer cockpit", "Live", "Updated 2m ago"],
-        ["Approval queue", "Review", "3 pending tasks"],
-        ["Field service", "Draft", "Ready to publish"],
-        ["Finance desk", "Live", "Rules synced"]
+        ["Müşteri kokpiti", "Yayında", "2 dk önce güncellendi"],
+        ["Onay kuyruğu", "İncelemede", "3 bekleyen görev"],
+        ["Saha servisi", "Taslak", "Yayına hazır"],
+        ["Finans masası", "Yayında", "Kurallar senkron"]
       ],
-      sideTitle: "App snapshot",
-      sideLines: ["4 shell regions", "12 visible blocks", "Config saved locally"]
+      sideTitle: "Uygulama özeti",
+      sideLines: ["4 kabuk bölgesi", "12 görünür blok", "Ayarlar yerelde kayıtlı"]
     });
   }
 
@@ -99,7 +99,7 @@
             <h1>${escapeHtml(meta.title)}</h1>
             <p>${escapeHtml(meta.summary)}</p>
           </div>
-          <a class="app-action" href="${options.cta === "Configure shell" ? "#/config" : "#/app/" + pageId}">
+          <a class="app-action" href="${options.cta === "Uygulama kabuğunu yapılandır" ? "#/config" : "#/app/" + pageId}">
             ${icon(options.cta.slice(0, 3))}
             ${escapeHtml(options.cta)}
           </a>
@@ -112,7 +112,7 @@
         <section class="app-workbench">
           <article class="app-panel app-panel-main">
             <div class="app-panel-head">
-              <span>Workspace</span>
+              <span>Çalışma alanı</span>
               <strong>${escapeHtml(meta.label)}</strong>
             </div>
             <div class="app-list">
@@ -121,7 +121,7 @@
           </article>
           <aside class="app-panel app-panel-side">
             <div class="app-panel-head">
-              <span>Inspector</span>
+              <span>İnceleyici</span>
               <strong>${escapeHtml(options.sideTitle)}</strong>
             </div>
             <div class="app-note-stack">

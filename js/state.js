@@ -1,26 +1,39 @@
 (function () {
   const ns = window.ShellStudio || (window.ShellStudio = {});
 
-  const STORAGE_KEY = "shell-demo:v1";
+  const STORAGE_KEY = "shell-demo:v2";
 
   const areas = [
-    { id: "header", label: "Header", axis: "horizontal" },
-    { id: "leftBar", label: "Left bar", axis: "vertical" },
-    { id: "rightBar", label: "Right bar", axis: "vertical" },
-    { id: "footer", label: "Footer", axis: "horizontal" }
+    { id: "header", label: "Üst bar", axis: "horizontal" },
+    { id: "leftBar", label: "Sol bar", axis: "vertical" },
+    { id: "rightBar", label: "Sağ bar", axis: "vertical" },
+    { id: "footer", label: "Alt bar", axis: "horizontal" }
   ];
 
   const sideModes = [
-    { id: "visible", label: "Visible" },
-    { id: "icon", label: "Icon" },
-    { id: "hover", label: "Hover" },
-    { id: "hidden", label: "Hidden" }
+    { id: "visible", label: "Görünür" },
+    { id: "icon", label: "İkon" },
+    { id: "hover", label: "Üzerine gelince" },
+    { id: "hidden", label: "Gizli" }
   ];
 
   const chromeModes = [
-    { id: "visible", label: "Visible" },
-    { id: "compact", label: "Compact" },
-    { id: "hidden", label: "Hidden" }
+    { id: "visible", label: "Görünür" },
+    { id: "compact", label: "Kompakt" },
+    { id: "hidden", label: "Gizli" }
+  ];
+
+  const frameLayouts = [
+    {
+      id: "classic",
+      label: "Klasik",
+      description: "Üst ve alt bar tam genişlikte, yan barlar içerik satırında."
+    },
+    {
+      id: "center",
+      label: "Merkez kolon",
+      description: "Yan barlar tam yükseklikte, üst ve alt bar sadece içerik kolonunda."
+    }
   ];
 
   const sideAreaIds = new Set(["leftBar", "rightBar"]);
@@ -34,16 +47,17 @@
   };
 
   const slotLabels = {
-    left: "Left",
-    center: "Center",
-    right: "Right",
-    top: "Top",
-    middle: "Middle",
-    bottom: "Bottom"
+    left: "Sol",
+    center: "Orta",
+    right: "Sağ",
+    top: "Üst",
+    middle: "Orta",
+    bottom: "Alt"
   };
 
   const defaultState = {
     version: 1,
+    frameLayout: "classic",
     areas: {
       header: {
         isOpen: true,
@@ -133,6 +147,11 @@
   function normalize(candidate) {
     const next = clone(defaultState);
     const source = candidate && candidate.areas ? candidate : {};
+    const sourceFrameLayout = frameLayouts.some((layout) => layout.id === source.frameLayout)
+      ? source.frameLayout
+      : defaultState.frameLayout;
+
+    next.frameLayout = sourceFrameLayout;
 
     areas.forEach((area) => {
       const sourceArea = source.areas && source.areas[area.id] ? source.areas[area.id] : {};
@@ -191,7 +210,7 @@
     try {
       window.localStorage.setItem(STORAGE_KEY, JSON.stringify(state));
     } catch (error) {
-      // The demo still works in-memory if a browser blocks localStorage.
+      // Tarayıcı localStorage'ı engellerse demo bellekte çalışmaya devam eder.
     }
   }
 
@@ -263,6 +282,16 @@
     commit((draft) => {
       draft.areas[areaId].mode = mode;
       draft.areas[areaId].isOpen = mode !== "hidden";
+    });
+  }
+
+  function setFrameLayout(layoutId) {
+    if (!frameLayouts.some((layout) => layout.id === layoutId)) {
+      return;
+    }
+
+    commit((draft) => {
+      draft.frameLayout = layoutId;
     });
   }
 
@@ -348,6 +377,7 @@
     areas,
     sideModes,
     chromeModes,
+    frameLayouts,
     sideAreaIds,
     chromeAreaIds,
     slotsByArea,
@@ -360,6 +390,7 @@
     toggleArea,
     setSideMode,
     setChromeMode,
+    setFrameLayout,
     addItem,
     removeItem,
     moveItem,

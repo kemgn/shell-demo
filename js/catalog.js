@@ -2,119 +2,126 @@
   const ns = window.ShellStudio || (window.ShellStudio = {});
 
   const categories = [
-    { id: "identity", label: "Identity", note: "Marka, tenant ve workspace hissi." },
-    { id: "navigation", label: "Navigation", note: "Sayfa linkleri, breadcrumb ve kısayollar." },
-    { id: "actions", label: "Actions", note: "Komutlar, hızlı işlemler ve yardımcılar." },
-    { id: "status", label: "Status", note: "Sistem, ortam ve işlem durumu." },
-    { id: "insight", label: "Insight", note: "Aktivite, sayaç ve bağlamsal özetler." }
+    { id: "identity", label: "Kimlik", note: "Marka, müşteri ve çalışma alanı hissi." },
+    { id: "navigation", label: "Navigasyon", note: "Sayfa linkleri, yol bilgisi ve kısayollar." },
+    { id: "layout", label: "Düzen", note: "Alanları ayıran çizgiler ve görsel nefesler." },
+    { id: "actions", label: "İşlemler", note: "Komutlar, hızlı işlemler ve yardımcılar." },
+    { id: "status", label: "Durum", note: "Sistem, ortam ve işlem durumu." },
+    { id: "insight", label: "İçgörü", note: "Aktivite, sayaç ve bağlamsal özetler." }
   ];
 
   const items = [
     {
       id: "brand",
-      label: "Brand mark",
+      label: "Marka logosu",
       category: "identity",
       description: "Uygulama adı ve mimari platform işareti."
     },
     {
       id: "workspace-switcher",
-      label: "Workspace switcher",
+      label: "Çalışma alanı seçici",
       category: "identity",
-      description: "Müşteri, tenant veya uygulama alanı seçimi."
+      description: "Müşteri, kiracı veya uygulama alanı seçimi."
     },
     {
       id: "user-menu",
-      label: "User menu",
+      label: "Kullanıcı menüsü",
       category: "identity",
       description: "Profil, rol ve hesap menüsü."
     },
     {
       id: "breadcrumbs",
-      label: "Breadcrumbs",
+      label: "Yol bilgisi",
       category: "navigation",
       description: "Aktif ekranın hiyerarşik yolunu gösterir."
     },
     {
       id: "primary-nav",
-      label: "Primary navigation",
+      label: "Ana navigasyon",
       category: "navigation",
-      description: "Dashboard, kayıtlar, akışlar ve config linkleri."
+      description: "Pano, kayıtlar, akışlar ve yapılandırma linkleri."
     },
     {
       id: "favorites",
-      label: "Favorites",
+      label: "Favoriler",
       category: "navigation",
       description: "Sık kullanılan ekranların kısa listesi."
     },
     {
+      id: "divider",
+      label: "Ayırıcı",
+      category: "layout",
+      description: "Header, footer veya yan bar içinde dikey/yatay çizgi."
+    },
+    {
       id: "global-search",
-      label: "Global search",
+      label: "Genel arama",
       category: "actions",
       description: "Kayıt, akış ve ekran arama alanı."
     },
     {
       id: "command-button",
-      label: "Command button",
+      label: "Komut butonu",
       category: "actions",
       description: "Mimar moduna veya ana aksiyona hızlı geçiş."
     },
     {
       id: "quick-actions",
-      label: "Quick actions",
+      label: "Hızlı işlemler",
       category: "actions",
-      description: "Yeni kayıt, export ve akış tetikleme komutları."
+      description: "Yeni kayıt, dışa aktarma ve akış tetikleme komutları."
     },
     {
       id: "ai-assistant",
-      label: "AI assistant",
+      label: "Yapay zeka yardımcısı",
       category: "actions",
       description: "No-code öneri ve yardım çağrısı."
     },
     {
       id: "notifications",
-      label: "Notifications",
+      label: "Bildirimler",
       category: "status",
       description: "Uyarılar, görevler ve onay bekleyen işler."
     },
     {
       id: "workspace-status",
-      label: "Workspace status",
+      label: "Çalışma alanı durumu",
       category: "status",
       description: "Yayın durumu ve son deployment bilgisi."
     },
     {
       id: "environment-chip",
-      label: "Environment chip",
+      label: "Ortam etiketi",
       category: "status",
-      description: "Sandbox, staging veya production etiketi."
+      description: "Sandbox, test veya canlı ortam etiketi."
     },
     {
       id: "sync-status",
-      label: "Sync status",
+      label: "Senkron durumu",
       category: "status",
-      description: "Kayıt, config ve şema senkronizasyon durumu."
+      description: "Kayıt, yapılandırma ve şema senkronizasyon durumu."
     },
     {
       id: "version",
-      label: "Version",
+      label: "Sürüm",
       category: "status",
       description: "Demo sürümü ve çıktı bilgisi."
     },
     {
       id: "record-counter",
-      label: "Record counter",
+      label: "Kayıt sayacı",
       category: "insight",
       description: "Canlı kayıt sayısı ve değişim bilgisi."
     },
     {
       id: "inspector-summary",
-      label: "Inspector summary",
+      label: "İnceleyici özeti",
       category: "insight",
       description: "Seçili ekranın bileşen ve kural özeti."
     },
     {
       id: "activity-feed",
-      label: "Activity feed",
+      label: "Aktivite akışı",
       category: "insight",
       description: "Son kullanıcı ve mimar aktiviteleri."
     }
@@ -127,99 +134,111 @@
 
   const defaultSettings = {
     brand: { label: "Optimate Solutions", compactLabel: "O" },
-    "workspace-switcher": { label: "Atlas Retail", eyebrow: "Client" },
+    "workspace-switcher": {
+      label: "Pipipipipi’nin çalışma alanı",
+      eyebrow: "Çalışma alanı",
+      activeWorkspaceId: "pipipipipi",
+      initials: "PW",
+      workspacesText: "pipipipipi|PW|Pipipipipi’nin çalışma alanı\nuntitled|UW|Adsız çalışma alanı"
+    },
     "user-menu": { label: "Mimar", initials: "KG" },
-    breadcrumbs: { rootLabel: "Studio" },
+    breadcrumbs: { rootLabel: "Stüdyo" },
     "primary-nav": { variant: "vertical" },
     favorites: {
       variant: "collapse",
-      title: "Favorites",
-      linksText: "Customer board|#/app/records\nApproval lane|#/app/workflows"
+      title: "Favoriler",
+      linksText: "Müşteri panosu|#/app/records\nOnay hattı|#/app/workflows"
     },
-    "global-search": { placeholder: "Record, flow, page..." },
-    "command-button": { label: "Configure", href: "#/config" },
+    "global-search": { placeholder: "Kayıt, akış, sayfa..." },
+    "command-button": { label: "Yapılandır", href: "#/config" },
     "quick-actions": {
-      title: "Quick actions",
-      actionsText: "New record\nExport view\nRun flow"
+      title: "Hızlı işlemler",
+      actionsText: "Yeni kayıt\nGörünümü dışa aktar\nAkışı çalıştır"
     },
-    "ai-assistant": { title: "AI Builder", subtitle: "Suggest shell items" },
+    "ai-assistant": { title: "Yapay zeka yardımcısı", subtitle: "Kabuk öğeleri öner" },
     notifications: { count: "7" },
-    "workspace-status": { title: "Workspace", status: "Published", note: "Last deploy 14:32" },
-    "environment-chip": { label: "Sandbox output" },
-    "sync-status": { label: "Config saved locally" },
-    version: { label: "v0.1 prototype" },
-    "record-counter": { label: "Records", value: "18,432", delta: "+12.4%" },
-    "inspector-summary": { title: "Inspector", note: "4 regions, 12 visible blocks" },
-    "activity-feed": { entriesText: "Elif changed table rules.\nKerem published v12." }
+    "workspace-status": { title: "Çalışma alanı", status: "Yayında", note: "Son yayın 14:32" },
+    "environment-chip": { label: "Sandbox çıktısı" },
+    "sync-status": { label: "Ayarlar yerelde kayıtlı" },
+    version: { label: "v0.1 prototip" },
+    "record-counter": { label: "Kayıtlar", value: "18,432", delta: "+12.4%" },
+    "inspector-summary": { title: "İnceleyici", note: "4 bölge, 12 görünür blok" },
+    "activity-feed": { entriesText: "Elif tablo kurallarını değiştirdi.\nKerem v12 sürümünü yayınladı." },
+    divider: { orientation: "auto" }
   };
 
   const settingSchemas = {
     brand: [
       { key: "label", label: "Logo alt", type: "text" },
-      { key: "compactLabel", label: "Compact text", type: "text" }
+      { key: "compactLabel", label: "Kompakt metin", type: "text" }
     ],
     "workspace-switcher": [
-      { key: "eyebrow", label: "Eyebrow", type: "text" },
-      { key: "label", label: "Workspace label", type: "text" }
+      { key: "eyebrow", label: "Üst etiket", type: "text" },
+      { key: "label", label: "Aktif çalışma alanı", type: "text" },
+      { key: "initials", label: "Aktif ikon", type: "text" },
+      { key: "workspacesText", label: "Çalışma alanları", type: "textarea", hint: "Her satır: id|baş harf|ad" }
     ],
     "user-menu": [
-      { key: "initials", label: "Initials", type: "text" },
-      { key: "label", label: "User label", type: "text" }
+      { key: "initials", label: "Baş harfler", type: "text" },
+      { key: "label", label: "Kullanıcı etiketi", type: "text" }
     ],
     breadcrumbs: [
-      { key: "rootLabel", label: "Root label", type: "text" }
+      { key: "rootLabel", label: "Kök etiket", type: "text" }
     ],
     "primary-nav": [
-      { key: "variant", label: "Variant", type: "select", options: ["vertical", "compact"] }
+      { key: "variant", label: "Görünüm", type: "select", options: ["vertical", "compact"] }
     ],
     favorites: [
-      { key: "variant", label: "Variant", type: "select", options: ["collapse", "dropdown", "list"] },
-      { key: "title", label: "Title", type: "text" },
-      { key: "linksText", label: "Links", type: "textarea", hint: "One per line: Label|#/app/records" }
+      { key: "variant", label: "Görünüm", type: "select", options: ["collapse", "dropdown", "list"] },
+      { key: "title", label: "Başlık", type: "text" },
+      { key: "linksText", label: "Linkler", type: "textarea", hint: "Her satır: Etiket|#/app/records" }
+    ],
+    divider: [
+      { key: "orientation", label: "Yön", type: "select", options: ["auto", "vertical", "horizontal"], hint: "Otomatik: yatay alanlarda dikey, yan barlarda yatay çizgi." }
     ],
     "global-search": [
-      { key: "placeholder", label: "Placeholder", type: "text" }
+      { key: "placeholder", label: "Yer tutucu", type: "text" }
     ],
     "command-button": [
-      { key: "label", label: "Button label", type: "text" },
-      { key: "href", label: "Href", type: "text" }
+      { key: "label", label: "Buton etiketi", type: "text" },
+      { key: "href", label: "Bağlantı", type: "text" }
     ],
     "quick-actions": [
-      { key: "title", label: "Title", type: "text" },
-      { key: "actionsText", label: "Actions", type: "textarea", hint: "One action per line" }
+      { key: "title", label: "Başlık", type: "text" },
+      { key: "actionsText", label: "İşlemler", type: "textarea", hint: "Her satıra bir işlem" }
     ],
     "ai-assistant": [
-      { key: "title", label: "Title", type: "text" },
-      { key: "subtitle", label: "Subtitle", type: "text" }
+      { key: "title", label: "Başlık", type: "text" },
+      { key: "subtitle", label: "Alt başlık", type: "text" }
     ],
     notifications: [
-      { key: "count", label: "Count", type: "text" }
+      { key: "count", label: "Sayı", type: "text" }
     ],
     "workspace-status": [
-      { key: "title", label: "Title", type: "text" },
-      { key: "status", label: "Status", type: "text" },
-      { key: "note", label: "Note", type: "text" }
+      { key: "title", label: "Başlık", type: "text" },
+      { key: "status", label: "Durum", type: "text" },
+      { key: "note", label: "Not", type: "text" }
     ],
     "environment-chip": [
-      { key: "label", label: "Label", type: "text" }
+      { key: "label", label: "Etiket", type: "text" }
     ],
     "sync-status": [
-      { key: "label", label: "Label", type: "text" }
+      { key: "label", label: "Etiket", type: "text" }
     ],
     version: [
-      { key: "label", label: "Version label", type: "text" }
+      { key: "label", label: "Sürüm etiketi", type: "text" }
     ],
     "record-counter": [
-      { key: "label", label: "Label", type: "text" },
-      { key: "value", label: "Value", type: "text" },
-      { key: "delta", label: "Delta", type: "text" }
+      { key: "label", label: "Etiket", type: "text" },
+      { key: "value", label: "Değer", type: "text" },
+      { key: "delta", label: "Değişim", type: "text" }
     ],
     "inspector-summary": [
-      { key: "title", label: "Title", type: "text" },
-      { key: "note", label: "Note", type: "text" }
+      { key: "title", label: "Başlık", type: "text" },
+      { key: "note", label: "Not", type: "text" }
     ],
     "activity-feed": [
-      { key: "entriesText", label: "Entries", type: "textarea", hint: "One entry per line" }
+      { key: "entriesText", label: "Kayıtlar", type: "textarea", hint: "Her satıra bir kayıt" }
     ]
   };
 
@@ -253,7 +272,7 @@
 
   function getSettingSchema(itemId) {
     return settingSchemas[itemId] || [
-      { key: "label", label: "Label", type: "text" }
+      { key: "label", label: "Etiket", type: "text" }
     ];
   }
 

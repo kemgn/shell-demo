@@ -12,7 +12,8 @@
       <div class="config-page page-enter">
         <section class="config-layout">
           <div class="config-editor-panel">
-            <nav class="config-tabs" aria-label="Shell regions">
+            ${renderFrameLayoutPicker(state)}
+            <nav class="config-tabs" aria-label="Uygulama kabuğu bölgeleri">
               ${ns.State.areas.map((area) => renderAreaTab(area, state)).join("")}
             </nav>
             <div class="config-tab-body">
@@ -22,6 +23,27 @@
           ${renderSidePanel(state)}
         </section>
       </div>
+    `;
+  }
+
+  function renderFrameLayoutPicker(state) {
+    const currentLayout = state.frameLayout || "classic";
+
+    return `
+      <section class="frame-layout-picker" aria-label="Kabuk yerleşim modu">
+        <div>
+          <span>Yerleşim modu</span>
+          <strong>Kabuk davranışı</strong>
+        </div>
+        <div class="frame-layout-options">
+          ${ns.State.frameLayouts.map((layout) => `
+            <button class="frame-layout-card ${layout.id === currentLayout ? "is-active" : ""}" type="button" data-action="set-frame-layout" data-layout="${layout.id}">
+              <strong>${escapeHtml(layout.label)}</strong>
+              <span>${escapeHtml(layout.description)}</span>
+            </button>
+          `).join("")}
+        </div>
+      </section>
     `;
   }
 
@@ -68,7 +90,7 @@
             : ns.State.chromeAreaIds.has(area.id)
               ? ns.Shell.renderChromeModePicker(area, areaState.mode || "visible", "config")
             : `<button class="ghost-button" type="button" data-action="toggle-area" data-area="${area.id}">
-                ${areaState.isOpen ? "Collapse" : "Expand"}
+                ${areaState.isOpen ? "Daralt" : "Genişlet"}
               </button>`}
         </header>
         <div class="slot-editor-grid slot-editor-grid-${area.axis}">
@@ -83,18 +105,18 @@
       <section class="slot-editor">
         <div class="slot-editor-title">
           <span>${escapeHtml(ns.State.slotLabels[slot])}</span>
-          <small>${items.length} item</small>
+          <small>${items.length} öğe</small>
         </div>
         <div class="config-item-list">
           ${items.length ? items.map((instance, index) => renderConfigItem(area.id, slot, instance, index, items.length)).join("") : `
-            <div class="empty-config-slot">Bu slot boş. Catalog'dan bir item ekle.</div>
+            <div class="empty-config-slot">Bu slot boş. Katalogdan bir öğe ekle.</div>
           `}
         </div>
         <div class="add-row">
-          <select data-add-select aria-label="${escapeHtml(area.label)} ${escapeHtml(slot)} item seçimi">
+          <select data-add-select aria-label="${escapeHtml(area.label)} ${escapeHtml(slot)} öğe seçimi">
             ${renderCatalogOptions()}
           </select>
-          <button class="add-button" type="button" data-action="add-item" data-area="${area.id}" data-slot="${slot}">Add</button>
+          <button class="add-button" type="button" data-action="add-item" data-area="${area.id}" data-slot="${slot}">Ekle</button>
         </div>
       </section>
     `;
@@ -109,13 +131,13 @@
       <div class="config-item-row ${isSelected ? "is-selected" : ""}">
         <div>
           <strong>${escapeHtml(item.label)}</strong>
-          <small>${escapeHtml(item.category)}${settings.variant ? ` / ${escapeHtml(settings.variant)}` : ""}</small>
+          <small>${escapeHtml(getCategoryLabel(item.category))}${settings.variant ? ` / ${escapeHtml(getVariantLabel(settings.variant))}` : ""}</small>
         </div>
         <div class="item-row-actions">
-          <button class="customize-button" type="button" data-action="edit-item" data-id="${instance.id}">Customize</button>
-          <button type="button" data-action="move-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}" data-direction="up" ${index === 0 ? "disabled" : ""}>Up</button>
-          <button type="button" data-action="move-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}" data-direction="down" ${index === count - 1 ? "disabled" : ""}>Down</button>
-          <button type="button" data-action="remove-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}">Remove</button>
+          <button class="customize-button" type="button" data-action="edit-item" data-id="${instance.id}">Özelleştir</button>
+          <button type="button" data-action="move-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}" data-direction="up" ${index === 0 ? "disabled" : ""}>Yukarı</button>
+          <button type="button" data-action="move-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}" data-direction="down" ${index === count - 1 ? "disabled" : ""}>Aşağı</button>
+          <button type="button" data-action="remove-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}">Kaldır</button>
         </div>
       </div>
     `;
@@ -152,10 +174,10 @@
       <aside class="catalog-panel">
         <div class="catalog-panel-head">
           <div>
-            <span>Available items</span>
-            <strong>${ns.Catalog.items.length} blocks</strong>
+            <span>Kullanılabilir öğeler</span>
+            <strong>${ns.Catalog.items.length} blok</strong>
           </div>
-          <button class="mini-danger-button" type="button" data-action="reset-config">Reset</button>
+          <button class="mini-danger-button" type="button" data-action="reset-config">Sıfırla</button>
         </div>
         ${ns.Catalog.categories.map(renderCatalogCategory).join("")}
       </aside>
@@ -175,15 +197,15 @@
       <aside class="element-editor-panel">
         <div class="element-editor-head">
           <div>
-            <span>Element settings</span>
+            <span>Öğe ayarları</span>
             <strong>${escapeHtml(item.label)}</strong>
             <small>${escapeHtml(selected.area.label)} / ${escapeHtml(ns.State.slotLabels[selected.slot])}</small>
           </div>
-          <button class="ghost-button" type="button" data-action="clear-item-edit">Catalog</button>
+          <button class="ghost-button" type="button" data-action="clear-item-edit">Katalog</button>
         </div>
         <div class="element-editor-body" data-item-editor data-id="${selected.instance.id}">
           ${schema.map((field) => renderSettingField(field, settings[field.key] || "")).join("")}
-          <button class="save-settings-button" type="button" data-action="save-item-settings" data-id="${selected.instance.id}">Apply settings</button>
+          <button class="save-settings-button" type="button" data-action="save-item-settings" data-id="${selected.instance.id}">Ayarları uygula</button>
         </div>
       </aside>
     `;
@@ -194,30 +216,30 @@
       <aside class="element-editor-panel favorites-editor-panel">
         <div class="element-editor-head">
           <div>
-            <span>Favorites appearance</span>
-            <strong>Favorites boyle gozuksun</strong>
+            <span>Favoriler görünümü</span>
+            <strong>Favoriler böyle gözüksün</strong>
             <small>${escapeHtml(selected.area.label)} / ${escapeHtml(ns.State.slotLabels[selected.slot])}</small>
           </div>
-          <button class="ghost-button" type="button" data-action="clear-item-edit">Catalog</button>
+          <button class="ghost-button" type="button" data-action="clear-item-edit">Katalog</button>
         </div>
 
         <section class="appearance-section">
-          <span class="setting-section-title">Gorunum tipi</span>
+          <span class="setting-section-title">Görünüm tipi</span>
           <div class="appearance-card-grid">
-            ${renderAppearanceCard(selected.instance.id, settings.variant, "collapse", "Collapse", "Baslik acilir/kapanir, linkler altinda siralanir.")}
-            ${renderAppearanceCard(selected.instance.id, settings.variant, "dropdown", "Dropdown", "Baslik menudur; linkler dropdown davranisi gibi acilir.")}
-            ${renderAppearanceCard(selected.instance.id, settings.variant, "list", "List", "Baslik ve linkler her zaman acik sade liste olur.")}
+            ${renderAppearanceCard(selected.instance.id, settings.variant, "collapse", "Açılır/kapanır", "Başlık açılır/kapanır, linkler altında sıralanır.")}
+            ${renderAppearanceCard(selected.instance.id, settings.variant, "dropdown", "Açılır menü", "Başlık menü gibi davranır; linkler yüzen panelde açılır.")}
+            ${renderAppearanceCard(selected.instance.id, settings.variant, "list", "Liste", "Başlık ve linkler her zaman açık sade liste olur.")}
           </div>
         </section>
 
         <div class="element-editor-body" data-item-editor data-id="${selected.instance.id}">
-          ${renderSettingField({ key: "title", label: "Title", type: "text" }, settings.title || "")}
-          ${renderSettingField({ key: "linksText", label: "Links", type: "textarea", hint: "One per line: Label|#/app/records" }, settings.linksText || "")}
-          <button class="save-settings-button" type="button" data-action="save-item-settings" data-id="${selected.instance.id}">Apply text and links</button>
+          ${renderSettingField({ key: "title", label: "Başlık", type: "text" }, settings.title || "")}
+          ${renderSettingField({ key: "linksText", label: "Linkler", type: "textarea", hint: "Her satır: Etiket|#/app/records" }, settings.linksText || "")}
+          <button class="save-settings-button" type="button" data-action="save-item-settings" data-id="${selected.instance.id}">Metni ve linkleri uygula</button>
         </div>
 
         <section class="favorites-preview">
-          <span class="setting-section-title">Preview</span>
+          <span class="setting-section-title">Önizleme</span>
           ${renderFavoritesPreview(settings)}
         </section>
       </aside>
@@ -233,9 +255,28 @@
     `;
   }
 
+  function getVariantLabel(variant) {
+    const labels = {
+      collapse: "açılır/kapanır",
+      dropdown: "açılır menü",
+      list: "liste",
+      auto: "otomatik",
+      vertical: "dikey",
+      horizontal: "yatay",
+      compact: "kompakt"
+    };
+
+    return labels[variant] || variant;
+  }
+
+  function getCategoryLabel(categoryId) {
+    const category = ns.Catalog.categories.find((candidate) => candidate.id === categoryId);
+    return category ? category.label : categoryId;
+  }
+
   function renderFavoritesPreview(settings) {
     const links = parseLinks(settings.linksText);
-    const title = settings.title || "Favorites";
+    const title = settings.title || "Favoriler";
 
     if (settings.variant === "list") {
       return `
@@ -243,6 +284,17 @@
           <span>${escapeHtml(title)}</span>
           ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
         </div>
+      `;
+    }
+
+    if (settings.variant === "dropdown") {
+      return `
+        <details class="favorites-preview-card favorites-preview-dropdown">
+          <summary>${escapeHtml(title)}</summary>
+          <div>
+            ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
+          </div>
+        </details>
       `;
     }
 
@@ -263,7 +315,7 @@
           <span>${escapeHtml(field.label)}</span>
           <select data-setting-key="${escapeHtml(field.key)}">
             ${(field.options || []).map((option) => `
-              <option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(option)}</option>
+              <option value="${escapeHtml(option)}" ${option === value ? "selected" : ""}>${escapeHtml(getVariantLabel(option))}</option>
             `).join("")}
           </select>
           ${hint}
@@ -320,8 +372,8 @@
       .filter((link) => link.label);
 
     return links.length ? links : [
-      { label: "Customer board", href: "#/app/records" },
-      { label: "Approval lane", href: "#/app/workflows" }
+      { label: "Müşteri panosu", href: "#/app/records" },
+      { label: "Onay hattı", href: "#/app/workflows" }
     ];
   }
 

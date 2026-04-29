@@ -3,10 +3,10 @@
   const { escapeHtml, icon } = ns.Utils;
 
   const navLinks = [
-    { href: "#/app/dashboard", page: "dashboard", label: "Dashboard" },
-    { href: "#/app/records", page: "records", label: "Records" },
-    { href: "#/app/workflows", page: "workflows", label: "Workflows" },
-    { href: "#/config", page: "config", label: "Config" }
+    { href: "#/app/dashboard", page: "dashboard", label: "Pano" },
+    { href: "#/app/records", page: "records", label: "Kayıtlar" },
+    { href: "#/app/workflows", page: "workflows", label: "İş akışları" },
+    { href: "#/config", page: "config", label: "Yapılandırma" }
   ];
 
   function render(route) {
@@ -18,7 +18,7 @@
 
     return `
       <div class="studio-shell">
-        <div class="shell-toolbar" aria-label="Shell visibility controls">
+        <div class="shell-toolbar" aria-label="Uygulama kabuğu görünürlük kontrolleri">
           ${ns.State.areas.map((area) => renderToolbarControl(area, state)).join("")}
         </div>
         <div class="app-frame ${frameClasses(state)}">
@@ -45,6 +45,7 @@
     classes.push(`is-rightBar-${getSideMode(state, "rightBar")}`);
     classes.push(`is-header-${getChromeMode(state, "header")}`);
     classes.push(`is-footer-${getChromeMode(state, "footer")}`);
+    classes.push(`is-layout-${state.frameLayout || "classic"}`);
 
     return classes.join(" ");
   }
@@ -73,14 +74,14 @@
     return `
       <button class="toolbar-pill ${isOpen ? "is-active" : ""}" type="button" data-action="toggle-area" data-area="${area.id}">
         <span>${escapeHtml(area.label)}</span>
-        <strong>${isOpen ? "on" : "off"}</strong>
+        <strong>${isOpen ? "açık" : "kapalı"}</strong>
       </button>
     `;
   }
 
   function renderSideModePicker(area, currentMode, context) {
     return `
-      <div class="side-mode-picker side-mode-picker-${context}" aria-label="${escapeHtml(area.label)} mode">
+      <div class="side-mode-picker side-mode-picker-${context}" aria-label="${escapeHtml(area.label)} modu">
         <span>${escapeHtml(area.label)}</span>
         <div>
           ${ns.State.sideModes.map((mode) => `
@@ -95,7 +96,7 @@
 
   function renderChromeModePicker(area, currentMode, context) {
     return `
-      <div class="side-mode-picker side-mode-picker-${context} chrome-mode-picker" aria-label="${escapeHtml(area.label)} mode">
+      <div class="side-mode-picker side-mode-picker-${context} chrome-mode-picker" aria-label="${escapeHtml(area.label)} modu">
         <span>${escapeHtml(area.label)}</span>
         <div>
           ${ns.State.chromeModes.map((mode) => `
@@ -163,6 +164,10 @@
     const item = ns.Catalog.getItem(instance.itemId);
     const settings = ns.Catalog.mergeSettings(instance.itemId, instance.settings);
 
+    if (item.id === "divider") {
+      return renderDivider(axis, settings, mode);
+    }
+
     if (axis === "horizontal" && mode === "compact") {
       return renderCompactItem(item, settings, route, "compact-item");
     }
@@ -182,6 +187,19 @@
   }
 
   function renderCompactItem(item, settings, route, className) {
+    const href = getCompactHref(item.id, route, settings);
+
+    if (item.id === "brand") {
+      const brandIcon = `<img src="assets/optimate-hexagon.svg" alt="">`;
+      const label = escapeHtml(item.label);
+
+      if (href) {
+        return `<a class="${className} brand-compact-icon" href="${href}" aria-label="${label}" title="${label}">${brandIcon}</a>`;
+      }
+
+      return `<button class="${className} brand-compact-icon" type="button" aria-label="${label}" title="${label}">${brandIcon}</button>`;
+    }
+
     const labelSource = settings.compactLabel
       || settings.initials
       || settings.count
@@ -195,15 +213,30 @@
       .map((part) => part[0])
       .join("")
       .toUpperCase();
-    const displayLabel = item.id === "brand" ? (settings.compactLabel || "O") : label;
-    const href = getCompactHref(item.id, route, settings);
     const badge = item.id === "notifications" ? `<span class="compact-badge">${escapeHtml(settings.count || "0")}</span>` : "";
 
     if (href) {
-      return `<a class="${className}" href="${href}" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(displayLabel)}${badge}</a>`;
+      return `<a class="${className}" href="${href}" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(label)}${badge}</a>`;
     }
 
-    return `<button class="${className}" type="button" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(displayLabel)}${badge}</button>`;
+    return `<button class="${className}" type="button" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(label)}${badge}</button>`;
+  }
+
+  function renderDivider(axis, settings, mode) {
+    const orientation = getDividerOrientation(axis, settings);
+    const ariaOrientation = orientation === "vertical" ? "vertical" : "horizontal";
+
+    return `
+      <span class="shell-divider shell-divider-${orientation} shell-divider-mode-${escapeHtml(mode)}" role="separator" aria-orientation="${ariaOrientation}"></span>
+    `;
+  }
+
+  function getDividerOrientation(axis, settings) {
+    if (settings.orientation === "vertical" || settings.orientation === "horizontal") {
+      return settings.orientation;
+    }
+
+    return axis === "horizontal" ? "vertical" : "horizontal";
   }
 
   function getCompactHref(itemId, route, settings) {
@@ -234,23 +267,18 @@
     const item = ns.Catalog.getItem(instance.itemId);
     const settings = ns.Catalog.mergeSettings(instance.itemId, instance.settings);
     const meta = route.name === "config"
-      ? { label: "Config", title: "Shell configuration" }
+      ? { label: "Yapılandırma", title: "Uygulama kabuğu yapılandırması" }
       : ns.Content.getPageMeta(route.page);
 
     switch (item.id) {
       case "brand":
         return `
-          <a class="shell-item brand-item brand-item-logo" href="#/app/dashboard" aria-label="Optimate Solutions home">
+          <a class="shell-item brand-item brand-item-logo" href="#/app/dashboard" aria-label="Optimate Solutions ana sayfa">
             <img src="assets/logo-light.png" alt="${escapeHtml(settings.label || "Optimate Solutions")}">
           </a>
         `;
       case "workspace-switcher":
-        return `
-          <button class="shell-item workspace-switcher" type="button">
-            <span>${escapeHtml(settings.eyebrow || "Client")}</span>
-            <strong>${escapeHtml(settings.label || "Atlas Retail")}</strong>
-          </button>
-        `;
+        return renderWorkspaceSwitcher(instance.id, settings);
       case "user-menu":
         return `
           <button class="shell-item user-menu" type="button">
@@ -260,14 +288,14 @@
         `;
       case "breadcrumbs":
         return `
-          <nav class="shell-item breadcrumbs" aria-label="Breadcrumb">
-            <span>${escapeHtml(settings.rootLabel || "Studio")}</span>
+          <nav class="shell-item breadcrumbs" aria-label="Yol bilgisi">
+            <span>${escapeHtml(settings.rootLabel || "Stüdyo")}</span>
             <span>${escapeHtml(meta.label)}</span>
           </nav>
         `;
       case "primary-nav":
         return `
-          <nav class="shell-item primary-nav primary-nav-${areaId}" aria-label="Primary">
+          <nav class="shell-item primary-nav primary-nav-${areaId}" aria-label="Ana navigasyon">
             ${navLinks.map((link) => `
               <a class="${isActive(link, route) ? "is-active" : ""}" href="${link.href}">
                 ${icon(link.label.slice(0, 2))}
@@ -281,29 +309,29 @@
       case "global-search":
         return `
           <label class="shell-item search-box">
-            <span>Search</span>
-            <input type="search" placeholder="${escapeHtml(settings.placeholder || "Record, flow, page...")}" aria-label="Global search">
+            <span>Arama</span>
+            <input type="search" placeholder="${escapeHtml(settings.placeholder || "Kayıt, akış, sayfa...")}" aria-label="Genel arama">
           </label>
         `;
       case "command-button":
         return `
           <a class="shell-item command-button" href="${escapeHtml(settings.href || "#/config")}">
             ${icon("CMD")}
-            <span>${escapeHtml(settings.label || "Configure")}</span>
+            <span>${escapeHtml(settings.label || "Yapılandır")}</span>
           </a>
         `;
       case "quick-actions":
         return `
           <div class="shell-item quick-actions">
-            <span class="mini-title">${escapeHtml(settings.title || "Quick actions")}</span>
+            <span class="mini-title">${escapeHtml(settings.title || "Hızlı işlemler")}</span>
             ${parseLines(settings.actionsText).map((action) => `<button type="button">${escapeHtml(action)}</button>`).join("")}
           </div>
         `;
       case "ai-assistant":
         return `
           <a class="shell-item ai-card" href="#/config">
-            <strong>${escapeHtml(settings.title || "AI Builder")}</strong>
-            <span>${escapeHtml(settings.subtitle || "Suggest shell items")}</span>
+            <strong>${escapeHtml(settings.title || "Yapay zeka yardımcısı")}</strong>
+            <span>${escapeHtml(settings.subtitle || "Kabuk öğeleri öner")}</span>
           </a>
         `;
       case "notifications":
@@ -316,21 +344,21 @@
       case "workspace-status":
         return `
           <div class="shell-item status-card">
-            <span class="mini-title">${escapeHtml(settings.title || "Workspace")}</span>
-            <strong>${escapeHtml(settings.status || "Published")}</strong>
-            <small>${escapeHtml(settings.note || "Last deploy 14:32")}</small>
+            <span class="mini-title">${escapeHtml(settings.title || "Çalışma alanı")}</span>
+            <strong>${escapeHtml(settings.status || "Yayında")}</strong>
+            <small>${escapeHtml(settings.note || "Son yayın 14:32")}</small>
           </div>
         `;
       case "environment-chip":
-        return `<span class="shell-item chip-item">${escapeHtml(settings.label || "Sandbox output")}</span>`;
+        return `<span class="shell-item chip-item">${escapeHtml(settings.label || "Sandbox çıktısı")}</span>`;
       case "sync-status":
-        return `<span class="shell-item sync-item"><i></i> ${escapeHtml(settings.label || "Config saved locally")}</span>`;
+        return `<span class="shell-item sync-item"><i></i> ${escapeHtml(settings.label || "Ayarlar yerelde kayıtlı")}</span>`;
       case "version":
-        return `<span class="shell-item version-item">${escapeHtml(settings.label || "v0.1 prototype")}</span>`;
+        return `<span class="shell-item version-item">${escapeHtml(settings.label || "v0.1 prototip")}</span>`;
       case "record-counter":
         return `
           <div class="shell-item counter-card">
-            <span>${escapeHtml(settings.label || "Records")}</span>
+            <span>${escapeHtml(settings.label || "Kayıtlar")}</span>
             <strong>${escapeHtml(settings.value || "18,432")}</strong>
             <small>${escapeHtml(settings.delta || "+12.4%")}</small>
           </div>
@@ -338,15 +366,15 @@
       case "inspector-summary":
         return `
           <div class="shell-item inspector-card">
-            <span class="mini-title">${escapeHtml(settings.title || "Inspector")}</span>
+            <span class="mini-title">${escapeHtml(settings.title || "İnceleyici")}</span>
             <strong>${escapeHtml(meta.title)}</strong>
-            <small>${escapeHtml(settings.note || "4 regions, 12 visible blocks")}</small>
+            <small>${escapeHtml(settings.note || "4 bölge, 12 görünür blok")}</small>
           </div>
         `;
       case "activity-feed":
         return `
           <div class="shell-item activity-feed">
-            <span class="mini-title">Activity</span>
+            <span class="mini-title">Aktivite</span>
             ${parseLines(settings.entriesText).map((entry) => `<p>${escapeHtml(entry)}</p>`).join("")}
           </div>
         `;
@@ -361,14 +389,19 @@
   }
 
   function renderFavorites(settings) {
-    const title = settings.title || "Favorites";
+    const title = settings.title || "Favoriler";
     const links = parseLinks(settings.linksText);
 
     if (settings.variant === "dropdown") {
       return `
-        <details class="shell-item stacked-card favorites-menu">
-          <summary>${escapeHtml(title)}</summary>
-          ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
+        <details class="shell-item favorites-menu favorites-menu-dropdown">
+          <summary>
+            <span>${escapeHtml(title)}</span>
+            <i aria-hidden="true"></i>
+          </summary>
+          <div class="favorites-dropdown-menu">
+            ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
+          </div>
         </details>
       `;
     }
@@ -383,11 +416,72 @@
     }
 
     return `
-      <details class="shell-item stacked-card favorites-menu" open>
+      <details class="shell-item stacked-card favorites-menu favorites-menu-collapse" open>
         <summary>${escapeHtml(title)}</summary>
         ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
       </details>
     `;
+  }
+
+  function renderWorkspaceSwitcher(instanceId, settings) {
+    const workspaces = parseWorkspaces(settings.workspacesText);
+    const activeWorkspace = workspaces.find((workspace) => workspace.id === settings.activeWorkspaceId)
+      || workspaces[0];
+    const activeLabel = settings.label || activeWorkspace.label;
+    const activeInitials = settings.initials || activeWorkspace.initials;
+
+    return `
+      <details class="shell-item workspace-switcher-menu">
+        <summary>
+          <span class="workspace-avatar">${escapeHtml(activeInitials)}</span>
+          <span class="workspace-summary-text">
+            <small>${escapeHtml(settings.eyebrow || "Çalışma alanı")}</small>
+            <strong>${escapeHtml(activeLabel)}</strong>
+          </span>
+          <i aria-hidden="true"></i>
+        </summary>
+        <div class="workspace-menu-panel">
+          <label class="workspace-search">
+            <span aria-hidden="true">⌕</span>
+            <input type="search" placeholder="Ara" aria-label="Çalışma alanı ara" data-workspace-search>
+          </label>
+          <div class="workspace-option-list">
+            ${workspaces.map((workspace) => renderWorkspaceOption(instanceId, workspace, activeWorkspace.id)).join("")}
+            <span class="workspace-empty" hidden>Eşleşen çalışma alanı yok</span>
+          </div>
+        </div>
+      </details>
+    `;
+  }
+
+  function renderWorkspaceOption(instanceId, workspace, activeWorkspaceId) {
+    const isActive = workspace.id === activeWorkspaceId;
+
+    return `
+      <button class="workspace-option ${isActive ? "is-active" : ""}" type="button" data-action="select-workspace" data-id="${instanceId}" data-workspace-id="${escapeHtml(workspace.id)}" data-label="${escapeHtml(workspace.label)}" data-initials="${escapeHtml(workspace.initials)}" data-search-key="${escapeHtml(`${workspace.initials} ${workspace.label}`.toLowerCase())}">
+        <span class="workspace-avatar">${escapeHtml(workspace.initials)}</span>
+        <strong>${escapeHtml(workspace.label)}</strong>
+        ${isActive ? `<span class="workspace-check" aria-label="Seçili">✓</span>` : ""}
+      </button>
+    `;
+  }
+
+  function parseWorkspaces(value) {
+    const workspaces = parseLines(value).map((line, index) => {
+      const [id, initials, label] = line.split("|");
+      const safeLabel = (label || initials || id || `Çalışma alanı ${index + 1}`).trim();
+
+      return {
+        id: (id || `workspace-${index + 1}`).trim(),
+        initials: (initials || safeLabel.slice(0, 2)).trim().slice(0, 3).toUpperCase(),
+        label: safeLabel
+      };
+    }).filter((workspace) => workspace.label);
+
+    return workspaces.length ? workspaces : [
+      { id: "pipipipipi", initials: "PW", label: "Pipipipipi’nin çalışma alanı" },
+      { id: "untitled", initials: "UW", label: "Adsız çalışma alanı" }
+    ];
   }
 
   function parseLines(value) {
@@ -407,8 +501,8 @@
     }).filter((link) => link.label);
 
     return links.length ? links : [
-      { label: "Customer board", href: "#/app/records" },
-      { label: "Approval lane", href: "#/app/workflows" }
+      { label: "Müşteri panosu", href: "#/app/records" },
+      { label: "Onay hattı", href: "#/app/workflows" }
     ];
   }
 
