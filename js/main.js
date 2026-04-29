@@ -39,7 +39,40 @@
         return;
       }
 
+      if (action === "edit-item") {
+        ns.Config.setSelectedItem(control.dataset.id);
+        ns.Router.render();
+        return;
+      }
+
+      if (action === "clear-item-edit") {
+        ns.Config.clearSelectedItem();
+        ns.Router.render();
+        return;
+      }
+
+      if (action === "save-item-settings") {
+        const editor = control.closest("[data-item-editor]");
+        const fields = editor ? editor.querySelectorAll("[data-setting-key]") : [];
+        const settings = {};
+
+        fields.forEach((field) => {
+          settings[field.dataset.settingKey] = field.value;
+        });
+
+        ns.State.updateItemSettings(control.dataset.id, settings);
+        return;
+      }
+
+      if (action === "set-item-setting") {
+        ns.State.updateItemSettings(control.dataset.id, {
+          [control.dataset.key]: control.dataset.value
+        });
+        return;
+      }
+
       if (action === "reset-config") {
+        ns.Config.clearSelectedItem();
         ns.State.reset();
         return;
       }
@@ -56,6 +89,7 @@
       }
 
       if (action === "remove-item") {
+        ns.Config.clearSelectedItem();
         ns.State.removeItem(control.dataset.area, control.dataset.slot, control.dataset.id);
         return;
       }

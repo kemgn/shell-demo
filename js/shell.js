@@ -161,9 +161,10 @@
 
   function renderSlotInstance(instance, areaId, axis, mode, route) {
     const item = ns.Catalog.getItem(instance.itemId);
+    const settings = ns.Catalog.mergeSettings(instance.itemId, instance.settings);
 
     if (axis === "horizontal" && mode === "compact") {
-      return renderCompactItem(item, route, "compact-item");
+      return renderCompactItem(item, settings, route, "compact-item");
     }
 
     if (axis !== "vertical") {
@@ -172,7 +173,7 @@
 
     return `
       <div class="rail-item" title="${escapeHtml(item.label)}">
-        ${renderCompactItem(item, route, "rail-icon")}
+        ${renderCompactItem(item, settings, route, "rail-icon")}
         <div class="rail-content">
           ${renderShellItem(instance, areaId, route)}
         </div>
@@ -180,17 +181,23 @@
     `;
   }
 
-  function renderCompactItem(item, route, className) {
-    const label = item.label
+  function renderCompactItem(item, settings, route, className) {
+    const labelSource = settings.compactLabel
+      || settings.initials
+      || settings.count
+      || settings.title
+      || settings.label
+      || item.label;
+    const label = labelSource
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0])
       .join("")
       .toUpperCase();
-    const displayLabel = item.id === "brand" ? "O" : label;
-    const href = getCompactHref(item.id, route);
-    const badge = item.id === "notifications" ? `<span class="compact-badge">7</span>` : "";
+    const displayLabel = item.id === "brand" ? (settings.compactLabel || "O") : label;
+    const href = getCompactHref(item.id, route, settings);
+    const badge = item.id === "notifications" ? `<span class="compact-badge">${escapeHtml(settings.count || "0")}</span>` : "";
 
     if (href) {
       return `<a class="${className}" href="${href}" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(displayLabel)}${badge}</a>`;
@@ -199,7 +206,7 @@
     return `<button class="${className}" type="button" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(displayLabel)}${badge}</button>`;
   }
 
-  function getCompactHref(itemId, route) {
+  function getCompactHref(itemId, route, settings) {
     const hrefs = {
       brand: "#/app/dashboard",
       breadcrumbs: "#/app/dashboard",
@@ -212,6 +219,10 @@
       "activity-feed": "#/app/workflows"
     };
 
+    if (itemId === "command-button" && settings.href) {
+      return settings.href;
+    }
+
     if (itemId === "global-search") {
       return route.name === "config" ? "#/config" : `#/app/${route.page || "dashboard"}`;
     }
@@ -221,6 +232,7 @@
 
   function renderShellItem(instance, areaId, route) {
     const item = ns.Catalog.getItem(instance.itemId);
+    const settings = ns.Catalog.mergeSettings(instance.itemId, instance.settings);
     const meta = route.name === "config"
       ? { label: "Config", title: "Shell configuration" }
       : ns.Content.getPageMeta(route.page);
@@ -229,27 +241,27 @@
       case "brand":
         return `
           <a class="shell-item brand-item brand-item-logo" href="#/app/dashboard" aria-label="Optimate Solutions home">
-            <img src="assets/logo-light.png" alt="Optimate Solutions">
+            <img src="assets/logo-light.png" alt="${escapeHtml(settings.label || "Optimate Solutions")}">
           </a>
         `;
       case "workspace-switcher":
         return `
           <button class="shell-item workspace-switcher" type="button">
-            <span>Client</span>
-            <strong>Atlas Retail</strong>
+            <span>${escapeHtml(settings.eyebrow || "Client")}</span>
+            <strong>${escapeHtml(settings.label || "Atlas Retail")}</strong>
           </button>
         `;
       case "user-menu":
         return `
           <button class="shell-item user-menu" type="button">
-            <span class="avatar">KG</span>
-            <span>Mimar</span>
+            <span class="avatar">${escapeHtml(settings.initials || "KG")}</span>
+            <span>${escapeHtml(settings.label || "Mimar")}</span>
           </button>
         `;
       case "breadcrumbs":
         return `
           <nav class="shell-item breadcrumbs" aria-label="Breadcrumb">
-            <span>Studio</span>
+            <span>${escapeHtml(settings.rootLabel || "Studio")}</span>
             <span>${escapeHtml(meta.label)}</span>
           </nav>
         `;
@@ -265,86 +277,77 @@
           </nav>
         `;
       case "favorites":
-        return `
-          <div class="shell-item stacked-card">
-            <span class="mini-title">Favorites</span>
-            <a href="#/app/records">Customer board</a>
-            <a href="#/app/workflows">Approval lane</a>
-          </div>
-        `;
+        return renderFavorites(settings);
       case "global-search":
         return `
           <label class="shell-item search-box">
             <span>Search</span>
-            <input type="search" placeholder="Record, flow, page..." aria-label="Global search">
+            <input type="search" placeholder="${escapeHtml(settings.placeholder || "Record, flow, page...")}" aria-label="Global search">
           </label>
         `;
       case "command-button":
         return `
-          <a class="shell-item command-button" href="#/config">
+          <a class="shell-item command-button" href="${escapeHtml(settings.href || "#/config")}">
             ${icon("CMD")}
-            <span>Configure</span>
+            <span>${escapeHtml(settings.label || "Configure")}</span>
           </a>
         `;
       case "quick-actions":
         return `
           <div class="shell-item quick-actions">
-            <span class="mini-title">Quick actions</span>
-            <button type="button">New record</button>
-            <button type="button">Export view</button>
-            <button type="button">Run flow</button>
+            <span class="mini-title">${escapeHtml(settings.title || "Quick actions")}</span>
+            ${parseLines(settings.actionsText).map((action) => `<button type="button">${escapeHtml(action)}</button>`).join("")}
           </div>
         `;
       case "ai-assistant":
         return `
           <a class="shell-item ai-card" href="#/config">
-            <strong>AI Builder</strong>
-            <span>Suggest shell items</span>
+            <strong>${escapeHtml(settings.title || "AI Builder")}</strong>
+            <span>${escapeHtml(settings.subtitle || "Suggest shell items")}</span>
           </a>
         `;
       case "notifications":
         return `
           <button class="shell-item notification-button" type="button">
             ${icon("N")}
-            <span>7</span>
+            <span>${escapeHtml(settings.count || "0")}</span>
           </button>
         `;
       case "workspace-status":
         return `
           <div class="shell-item status-card">
-            <span class="mini-title">Workspace</span>
-            <strong>Published</strong>
-            <small>Last deploy 14:32</small>
+            <span class="mini-title">${escapeHtml(settings.title || "Workspace")}</span>
+            <strong>${escapeHtml(settings.status || "Published")}</strong>
+            <small>${escapeHtml(settings.note || "Last deploy 14:32")}</small>
           </div>
         `;
       case "environment-chip":
-        return `<span class="shell-item chip-item">Sandbox output</span>`;
+        return `<span class="shell-item chip-item">${escapeHtml(settings.label || "Sandbox output")}</span>`;
       case "sync-status":
-        return `<span class="shell-item sync-item"><i></i> Config saved locally</span>`;
+        return `<span class="shell-item sync-item"><i></i> ${escapeHtml(settings.label || "Config saved locally")}</span>`;
       case "version":
-        return `<span class="shell-item version-item">v0.1 prototype</span>`;
+        return `<span class="shell-item version-item">${escapeHtml(settings.label || "v0.1 prototype")}</span>`;
       case "record-counter":
         return `
           <div class="shell-item counter-card">
-            <span>Records</span>
-            <strong>18,432</strong>
-            <small>+12.4%</small>
+            <span>${escapeHtml(settings.label || "Records")}</span>
+            <strong>${escapeHtml(settings.value || "18,432")}</strong>
+            <small>${escapeHtml(settings.delta || "+12.4%")}</small>
           </div>
         `;
       case "inspector-summary":
         return `
           <div class="shell-item inspector-card">
-            <span class="mini-title">Inspector</span>
+            <span class="mini-title">${escapeHtml(settings.title || "Inspector")}</span>
             <strong>${escapeHtml(meta.title)}</strong>
-            <small>4 regions, 12 visible blocks</small>
+            <small>${escapeHtml(settings.note || "4 regions, 12 visible blocks")}</small>
           </div>
         `;
       case "activity-feed":
         return `
           <div class="shell-item activity-feed">
             <span class="mini-title">Activity</span>
-            <p><b>Elif</b> changed table rules.</p>
-            <p><b>Kerem</b> published v12.</p>
+            ${parseLines(settings.entriesText).map((entry) => `<p>${escapeHtml(entry)}</p>`).join("")}
           </div>
         `;
       default:
@@ -355,6 +358,58 @@
           </div>
         `;
     }
+  }
+
+  function renderFavorites(settings) {
+    const title = settings.title || "Favorites";
+    const links = parseLinks(settings.linksText);
+
+    if (settings.variant === "dropdown") {
+      return `
+        <details class="shell-item stacked-card favorites-menu">
+          <summary>${escapeHtml(title)}</summary>
+          ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
+        </details>
+      `;
+    }
+
+    if (settings.variant === "list") {
+      return `
+        <div class="shell-item stacked-card">
+          <span class="mini-title">${escapeHtml(title)}</span>
+          ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
+        </div>
+      `;
+    }
+
+    return `
+      <details class="shell-item stacked-card favorites-menu" open>
+        <summary>${escapeHtml(title)}</summary>
+        ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
+      </details>
+    `;
+  }
+
+  function parseLines(value) {
+    return String(value || "")
+      .split(/\r?\n/)
+      .map((line) => line.trim())
+      .filter(Boolean);
+  }
+
+  function parseLinks(value) {
+    const links = parseLines(value).map((line) => {
+      const [label, href] = line.split("|");
+      return {
+        label: (label || "").trim(),
+        href: (href || "#").trim()
+      };
+    }).filter((link) => link.label);
+
+    return links.length ? links : [
+      { label: "Customer board", href: "#/app/records" },
+      { label: "Approval lane", href: "#/app/workflows" }
+    ];
   }
 
   function isActive(link, route) {

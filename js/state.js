@@ -123,7 +123,11 @@
   function createInstance(itemId) {
     const stamp = Date.now().toString(36);
     const random = Math.random().toString(36).slice(2, 8);
-    return { id: `${itemId}-${stamp}-${random}`, itemId };
+    return {
+      id: `${itemId}-${stamp}-${random}`,
+      itemId,
+      settings: ns.Catalog.getDefaultSettings(itemId)
+    };
   }
 
   function normalize(candidate) {
@@ -162,7 +166,8 @@
           .filter((item) => item && item.itemId)
           .map((item) => ({
             id: item.id || createInstance(item.itemId).id,
-            itemId: item.itemId
+            itemId: item.itemId,
+            settings: ns.Catalog.mergeSettings(item.itemId, item.settings)
           }));
       });
     });
@@ -302,6 +307,43 @@
     });
   }
 
+  function findItem(instanceId) {
+    for (const area of areas) {
+      for (const slot of slotsByArea[area.id]) {
+        const instance = state.areas[area.id].slots[slot]
+          .find((item) => item.id === instanceId);
+
+        if (instance) {
+          return { area, slot, instance };
+        }
+      }
+    }
+
+    return null;
+  }
+
+  function updateItemSettings(instanceId, settings) {
+    const target = findItem(instanceId);
+
+    if (!target) {
+      return;
+    }
+
+    commit((draft) => {
+      const instance = draft.areas[target.area.id].slots[target.slot]
+        .find((item) => item.id === instanceId);
+
+      if (!instance) {
+        return;
+      }
+
+      instance.settings = ns.Catalog.mergeSettings(instance.itemId, {
+        ...instance.settings,
+        ...settings
+      });
+    });
+  }
+
   ns.State = {
     areas,
     sideModes,
@@ -320,6 +362,8 @@
     setChromeMode,
     addItem,
     removeItem,
-    moveItem
+    moveItem,
+    findItem,
+    updateItemSettings
   };
 })();

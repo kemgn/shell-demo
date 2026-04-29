@@ -683,6 +683,33 @@ a {
   font-size: 0.88rem;
 }
 
+.favorites-menu {
+  gap: 8px;
+}
+
+.favorites-menu summary {
+  cursor: pointer;
+  color: var(--ink-soft);
+  font-size: 0.72rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.14em;
+  list-style: none;
+}
+
+.favorites-menu summary::-webkit-details-marker {
+  display: none;
+}
+
+.favorites-menu summary::after {
+  content: "+";
+  float: right;
+}
+
+.favorites-menu[open] summary::after {
+  content: "-";
+}
+
 .quick-actions button {
   border: 1px solid var(--line);
   border-radius: 12px;
@@ -1504,6 +1531,11 @@ th {
   background: rgba(255, 250, 240, 0.72);
 }
 
+.config-item-row.is-selected {
+  border-color: rgba(21, 127, 204, 0.5);
+  background: var(--primary-soft);
+}
+
 .config-item-row strong,
 .config-item-row small {
   display: block;
@@ -1533,6 +1565,12 @@ th {
   cursor: pointer;
   font-size: 0.78rem;
   font-weight: 800;
+}
+
+.item-row-actions .customize-button {
+  color: #fffaf0;
+  background: var(--primary);
+  border-color: var(--primary);
 }
 
 .item-row-actions button:disabled {
@@ -1569,6 +1607,182 @@ th {
   padding: 16px;
   display: grid;
   gap: 14px;
+}
+
+.element-editor-panel {
+  position: sticky;
+  top: 18px;
+  padding: 16px;
+  border: 1px solid rgba(255, 250, 240, 0.78);
+  border-radius: var(--radius-lg);
+  background: rgba(255, 255, 255, 0.82);
+  box-shadow: 0 16px 40px rgba(18, 55, 71, 0.1);
+  display: grid;
+  gap: 14px;
+}
+
+.element-editor-head {
+  display: flex;
+  align-items: flex-start;
+  justify-content: space-between;
+  gap: 12px;
+}
+
+.element-editor-head span,
+.element-editor-head strong,
+.element-editor-head small {
+  display: block;
+}
+
+.element-editor-head span {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.element-editor-head strong {
+  margin-top: 4px;
+  font-family: var(--font-display);
+  font-size: 1.25rem;
+  letter-spacing: -0.02em;
+}
+
+.element-editor-head small {
+  margin-top: 3px;
+  color: var(--ink-soft);
+}
+
+.element-editor-body {
+  display: grid;
+  gap: 12px;
+}
+
+.favorites-editor-panel {
+  align-content: start;
+}
+
+.appearance-section,
+.favorites-preview {
+  display: grid;
+  gap: 10px;
+}
+
+.setting-section-title {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.appearance-card-grid {
+  display: grid;
+  gap: 8px;
+}
+
+.appearance-card {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 15px;
+  padding: 12px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.78);
+  cursor: pointer;
+  text-align: left;
+  display: grid;
+  gap: 5px;
+}
+
+.appearance-card:hover {
+  border-color: rgba(21, 127, 204, 0.42);
+}
+
+.appearance-card.is-active {
+  border-color: var(--primary);
+  background: var(--primary-soft);
+}
+
+.appearance-card strong {
+  font-family: var(--font-display);
+}
+
+.appearance-card span {
+  color: var(--ink-soft);
+  font-size: 0.86rem;
+  line-height: 1.35;
+}
+
+.favorites-preview-card {
+  border: 1px solid var(--line);
+  border-radius: 16px;
+  padding: 12px;
+  background: rgba(255, 255, 255, 0.78);
+  display: grid;
+  gap: 8px;
+}
+
+.favorites-preview-card summary,
+.favorites-preview-card > span {
+  color: var(--ink);
+  cursor: pointer;
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.favorites-preview-card a {
+  padding: 8px 10px;
+  border-radius: 12px;
+  color: var(--ink-soft);
+  background: rgba(21, 127, 204, 0.08);
+  font-size: 0.88rem;
+}
+
+.setting-field {
+  display: grid;
+  gap: 7px;
+}
+
+.setting-field span {
+  color: var(--ink-soft);
+  font-size: 0.78rem;
+  font-weight: 900;
+  text-transform: uppercase;
+  letter-spacing: 0.12em;
+}
+
+.setting-field input,
+.setting-field select,
+.setting-field textarea {
+  width: 100%;
+  border: 1px solid var(--line);
+  border-radius: 13px;
+  padding: 10px 11px;
+  color: var(--ink);
+  background: rgba(255, 255, 255, 0.9);
+  outline: none;
+}
+
+.setting-field textarea {
+  resize: vertical;
+}
+
+.setting-field small {
+  color: var(--ink-soft);
+  line-height: 1.35;
+}
+
+.save-settings-button {
+  border: 0;
+  border-radius: 14px;
+  padding: 11px 13px;
+  color: #fffaf0;
+  background: var(--primary);
+  cursor: pointer;
+  font-weight: 900;
 }
 
 .catalog-panel-head {
@@ -1716,7 +1930,8 @@ th {
     grid-template-columns: repeat(2, minmax(0, 1fr));
   }
 
-  .catalog-panel {
+  .catalog-panel,
+  .element-editor-panel {
     position: static;
   }
 }
