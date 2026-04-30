@@ -205,8 +205,10 @@
     }
 
     return `
-      <div class="rail-item" title="${escapeHtml(item.label)}">
-        ${renderCompactItem(item, settings, route, "rail-icon")}
+      <div class="rail-item rail-item-${escapeHtml(item.id)}" title="${escapeHtml(item.label)}">
+        ${item.id === "primary-nav"
+          ? renderPrimaryNavRail(route)
+          : renderCompactItem(item, settings, route, "rail-icon")}
         <div class="rail-content">
           ${renderShellItem(instance, areaId, route)}
         </div>
@@ -226,6 +228,22 @@
       }
 
       return `<button class="${className} brand-compact-icon" type="button" aria-label="${label}" title="${label}">${brandIcon}</button>`;
+    }
+
+    if (item.id === "tree-menu") {
+      const entries = parseTreeItems(settings.itemsText);
+      const activeEntry = entries.find((entry) => isHrefActive(entry.href, route)) || entries[0];
+      const href = safeHref(activeEntry && activeEntry.href, "#/app/dashboard");
+      const label = escapeHtml(settings.title || item.label);
+      const glyph = `
+        <span class="tree-rail-glyph" aria-hidden="true">
+          <span></span>
+          <span></span>
+          <span></span>
+        </span>
+      `;
+
+      return `<a class="${className} tree-compact-icon" href="${escapeHtml(href)}" aria-label="${label}" title="${label}">${glyph}</a>`;
     }
 
     const labelSource = settings.compactLabel
@@ -273,18 +291,21 @@
       brand: "#/app/dashboard",
       breadcrumbs: "#/app/dashboard",
       "primary-nav": "#/app/dashboard",
+      "tree-menu": "#/app/dashboard",
       favorites: "#/app/records",
       button: "#/config",
       "icon-button": "#/config",
       "icon-text-button": "#/config",
       "command-button": "#/config",
+      "command-palette": "#/config",
       "quick-actions": "#/app/records",
       "ai-assistant": "#/config",
+      "mini-metric": "#/app/workflows",
       "inspector-summary": "#/config",
       "activity-feed": "#/app/workflows"
     };
 
-    if (["button", "icon-button", "icon-text-button", "command-button"].includes(itemId) && settings.href) {
+    if (["button", "icon-button", "icon-text-button", "command-button", "command-palette"].includes(itemId) && settings.href) {
       return safeHref(settings.href, hrefs[itemId]);
     }
 
@@ -305,33 +326,53 @@
     `;
   }
 
-  function renderActionButton(settings, variant) {
+  function renderActionButton(settings, presetVariant) {
     const href = escapeHtml(safeHref(settings.href, "#/config"));
-    const label = escapeHtml(settings.label || "Aksiyon");
-    const rawIcon = settings.icon || (settings.label || "Aksiyon").slice(0, 2);
+    const labelText = settings.label || "Aksiyon";
+    const label = escapeHtml(labelText);
+    const rawIcon = settings.icon || labelText.slice(0, 2);
+    const variant = normalizeButtonVariant(presetVariant || settings.variant || "text");
+    const appearance = normalizeButtonAppearance(settings.appearance || "primary");
+    const classes = `shell-item shell-button shell-button-${variant.className} shell-button-${appearance}`;
 
-    if (variant === "text") {
+    if (variant.id === "icon") {
       return `
-        <a class="shell-item shell-button shell-button-text" href="${href}">
-          <span>${label}</span>
-        </a>
-      `;
-    }
-
-    if (variant === "icon") {
-      return `
-        <a class="shell-item shell-button shell-button-icon" href="${href}" aria-label="${label}" title="${label}">
+        <a class="${classes}" href="${href}" aria-label="${label}" title="${label}">
           ${icon(rawIcon)}
         </a>
       `;
     }
 
+    if (variant.id === "iconText") {
+      return `
+        <a class="${classes}" href="${href}">
+          ${icon(rawIcon)}
+          <span>${label}</span>
+        </a>
+      `;
+    }
+
     return `
-      <a class="shell-item shell-button shell-button-icon-text" href="${href}">
-        ${icon(rawIcon)}
+      <a class="${classes}" href="${href}">
         <span>${label}</span>
       </a>
     `;
+  }
+
+  function normalizeButtonVariant(value) {
+    if (value === "icon" || value === "icon-button") {
+      return { id: "icon", className: "icon" };
+    }
+
+    if (value === "iconText" || value === "icon-text" || value === "icon-text-button") {
+      return { id: "iconText", className: "icon-text" };
+    }
+
+    return { id: "text", className: "text" };
+  }
+
+  function normalizeButtonAppearance(value) {
+    return ["primary", "secondary", "danger", "ghost"].includes(value) ? value : "primary";
   }
 
   function renderShellItem(instance, areaId, route) {
@@ -351,12 +392,7 @@
       case "workspace-switcher":
         return renderWorkspaceSwitcher(instance.id, settings);
       case "user-menu":
-        return `
-          <button class="shell-item user-menu" type="button">
-            <span class="avatar">${escapeHtml(settings.initials || "KG")}</span>
-            <span>${escapeHtml(settings.label || "Mimar")}</span>
-          </button>
-        `;
+        return renderUserMenu(settings);
       case "breadcrumbs":
         return `
           <nav class="shell-item breadcrumbs" aria-label="Yol bilgisi">
@@ -375,6 +411,8 @@
             `).join("")}
           </nav>
         `;
+      case "tree-menu":
+        return renderTreeMenu(settings, route);
       case "favorites":
         return renderFavorites(settings);
       case "global-search":
@@ -385,11 +423,11 @@
           </label>
         `;
       case "button":
-        return renderActionButton(settings, "text");
+        return renderActionButton(settings);
       case "icon-button":
-        return renderActionButton(settings, "icon");
+        return renderActionButton({ ...settings, variant: "icon" });
       case "icon-text-button":
-        return renderActionButton(settings, "icon-text");
+        return renderActionButton({ ...settings, variant: "iconText" });
       case "command-button":
         return `
           <a class="shell-item command-button" href="${escapeHtml(safeHref(settings.href, "#/config"))}">
@@ -397,6 +435,8 @@
             <span>${escapeHtml(settings.label || "Yapılandır")}</span>
           </a>
         `;
+      case "command-palette":
+        return renderCommandPalette(settings);
       case "quick-actions":
         return `
           <div class="shell-item quick-actions">
@@ -440,6 +480,8 @@
             <small>${escapeHtml(settings.delta || "+12.4%")}</small>
           </div>
         `;
+      case "mini-metric":
+        return renderMiniMetric(settings);
       case "inspector-summary":
         return `
           <div class="shell-item inspector-card">
@@ -463,6 +505,77 @@
           </div>
         `;
     }
+  }
+
+  function renderUserMenu(settings) {
+    const label = settings.label || "Mimar";
+    const initials = settings.initials || "KG";
+    const isAvatarOnly = settings.variant === "avatar";
+
+    return `
+      <button class="shell-item user-menu ${isAvatarOnly ? "user-menu-avatar" : ""}" type="button" aria-label="${escapeHtml(label)}">
+        <span class="avatar">${escapeHtml(initials)}</span>
+        ${isAvatarOnly ? "" : `<span>${escapeHtml(label)}</span>`}
+      </button>
+    `;
+  }
+
+  function renderPrimaryNavRail(route) {
+    return `
+      <nav class="primary-nav-rail" aria-label="Ana navigasyon kompakt">
+        ${navLinks.map((link) => `
+          <a class="rail-icon primary-nav-rail-link ${isActive(link, route) ? "is-active" : ""}" href="${link.href}" aria-label="${escapeHtml(link.label)}" title="${escapeHtml(link.label)}">
+            ${icon(link.label.slice(0, 2))}
+          </a>
+        `).join("")}
+      </nav>
+    `;
+  }
+
+  function renderTreeMenu(settings, route) {
+    const title = settings.title || "Tree menü";
+    const variant = settings.variant === "compact" ? "compact" : "nested";
+    const entries = parseTreeItems(settings.itemsText);
+
+    return `
+      <nav class="shell-item tree-menu tree-menu-${variant}" aria-label="${escapeHtml(title)}">
+        <span class="mini-title">${escapeHtml(title)}</span>
+        <div class="tree-menu-list">
+          ${entries.map((entry) => `
+            <a class="${isHrefActive(entry.href, route) ? "is-active" : ""}" href="${escapeHtml(entry.href)}" style="--tree-level: ${entry.level}">
+              ${icon(entry.icon)}
+              <span>${escapeHtml(entry.label)}</span>
+            </a>
+          `).join("")}
+        </div>
+      </nav>
+    `;
+  }
+
+  function renderCommandPalette(settings) {
+    const label = settings.label || "Komut paleti";
+    const variant = settings.variant === "compact" ? "compact" : "inline";
+
+    return `
+      <a class="shell-item command-palette command-palette-${variant}" href="${escapeHtml(safeHref(settings.href, "#/config"))}">
+        ${icon(settings.icon || "⌘")}
+        ${variant === "compact" ? "" : `<span>${escapeHtml(label)}</span>`}
+        <kbd>${escapeHtml(settings.shortcut || "Ctrl K")}</kbd>
+      </a>
+    `;
+  }
+
+  function renderMiniMetric(settings) {
+    const variant = settings.variant === "stacked" ? "stacked" : "inline";
+
+    return `
+      <div class="shell-item mini-metric mini-metric-${variant}">
+        <span>${escapeHtml(settings.label || "Aktif akış")}</span>
+        <strong>${escapeHtml(settings.value || "42")}</strong>
+        <small>${escapeHtml(settings.note || "6 bekleyen")}</small>
+        <em>${escapeHtml(settings.trend || "+8%")}</em>
+      </div>
+    `;
   }
 
   function renderFavorites(settings) {
@@ -589,6 +702,41 @@
       { label: "Müşteri panosu", href: "#/app/records" },
       { label: "Onay hattı", href: "#/app/workflows" }
     ];
+  }
+
+  function parseTreeItems(value) {
+    const entries = parseLines(value).map((line, index) => {
+      const [levelText, label, href, iconText] = line.split("|");
+      const parsedLevel = Number.parseInt(levelText, 10);
+      const safeLabel = (label || `Öğe ${index + 1}`).trim();
+
+      return {
+        level: Number.isFinite(parsedLevel) && parsedLevel > 0 ? Math.min(parsedLevel, 4) : 0,
+        label: safeLabel,
+        href: safeHref(href, "#"),
+        icon: (iconText || safeLabel.slice(0, 2)).trim().slice(0, 3).toUpperCase()
+      };
+    }).filter((entry) => entry.label);
+
+    return entries.length ? entries : [
+      { level: 0, label: "Yönetim", href: "#/app/dashboard", icon: "YN" },
+      { level: 1, label: "Kullanıcılar", href: "#/app/records", icon: "KU" },
+      { level: 1, label: "Roller", href: "#/app/workflows", icon: "RO" }
+    ];
+  }
+
+  function isHrefActive(href, route) {
+    const value = safeHref(href, "#");
+
+    if (value === "#/config") {
+      return route.name === "config";
+    }
+
+    if (value.startsWith("#/app/")) {
+      return route.name === "app" && route.page === value.replace("#/app/", "");
+    }
+
+    return false;
   }
 
   function isActive(link, route) {

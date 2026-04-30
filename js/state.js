@@ -1,7 +1,7 @@
 (function () {
   const ns = window.ShellStudio || (window.ShellStudio = {});
 
-  const STORAGE_KEY = "shell-demo:v4";
+  const STORAGE_KEY = "shell-demo:v5";
 
   const areas = [
     { id: "header", label: "Üst bar", axis: "horizontal" },
@@ -63,7 +63,7 @@
   };
 
   const defaultState = {
-    version: 4,
+    version: 5,
     frameLayout: "classic",
     areas: {
       header: {
@@ -89,7 +89,9 @@
           top: [
             { id: "default-primary-nav", itemId: "primary-nav" }
           ],
-          middle: [],
+          middle: [
+            { id: "default-tree-menu", itemId: "tree-menu" }
+          ],
           bottom: []
         }
       },
@@ -169,6 +171,18 @@
     return merged;
   }
 
+  function isItemAllowedInArea(areaId, itemId) {
+    if (itemId === "tenant-chip" || itemId === "tab-menu") {
+      return false;
+    }
+
+    if (itemId === "tree-menu") {
+      return sideAreaIds.has(areaId);
+    }
+
+    return true;
+  }
+
   function normalize(candidate) {
     const next = clone(defaultState);
     const source = candidate && candidate.areas ? candidate : {};
@@ -207,7 +221,7 @@
           : next.areas[area.id].slots[slot];
 
         next.areas[area.id].slots[slot] = sourceItems
-          .filter((item) => item && item.itemId)
+          .filter((item) => item && item.itemId && isItemAllowedInArea(area.id, item.itemId))
           .map((item) => ({
             id: item.id || createInstance(item.itemId).id,
             itemId: item.itemId,
@@ -321,7 +335,7 @@
   }
 
   function addItem(areaId, slot, itemId) {
-    if (!state.areas[areaId] || !state.areas[areaId].slots[slot] || !ns.Catalog.getItem(itemId)) {
+    if (!state.areas[areaId] || !state.areas[areaId].slots[slot] || !ns.Catalog.getItem(itemId) || !isItemAllowedInArea(areaId, itemId)) {
       return;
     }
 

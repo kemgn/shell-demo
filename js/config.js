@@ -12,10 +12,12 @@
       <div class="config-page page-enter">
         <section class="config-layout">
           <div class="config-editor-panel">
-            ${renderFrameLayoutPicker(state)}
-            <nav class="config-tabs" aria-label="Uygulama kabuğu bölgeleri">
-              ${ns.State.areas.map((area) => renderAreaTab(area, state)).join("")}
-            </nav>
+            <div class="config-shell-controls">
+              <nav class="config-tabs" aria-label="Uygulama kabuğu bölgeleri">
+                ${ns.State.areas.map((area) => renderAreaTab(area, state)).join("")}
+              </nav>
+              ${renderFrameLayoutPicker(state)}
+            </div>
             <div class="config-tab-body">
               ${renderAreaEditor(activeArea, state)}
             </div>
@@ -31,9 +33,8 @@
 
     return `
       <section class="frame-layout-picker" aria-label="Kabuk yerleşim modu">
-        <div>
+        <div class="frame-layout-heading">
           <span>Yerleşim modu</span>
-          <strong>Kabuk davranışı</strong>
         </div>
         <div class="frame-layout-options">
           ${ns.State.frameLayouts.map((layout) => `
@@ -123,7 +124,7 @@
     return `
       <div class="add-row slot-add-row">
         <select data-add-select aria-label="${escapeHtml(area.label)} ${escapeHtml(slot)} öğe seçimi">
-          ${renderCatalogOptions()}
+          ${renderCatalogOptions(area)}
         </select>
         <button class="add-button" type="button" data-action="add-item" data-area="${area.id}" data-slot="${slot}">Ekle</button>
       </div>
@@ -151,9 +152,14 @@
     `;
   }
 
-  function renderCatalogOptions() {
+  function renderCatalogOptions(area) {
     return ns.Catalog.categories.map((category) => {
-      const items = ns.Catalog.getItemsByCategory(category.id);
+      const items = ns.Catalog.getItemsByCategory(category.id)
+        .filter((item) => isItemAllowedInArea(area.id, item.id));
+
+      if (!items.length) {
+        return "";
+      }
 
       return `
         <optgroup label="${escapeHtml(category.label)}">
@@ -161,6 +167,14 @@
         </optgroup>
       `;
     }).join("");
+  }
+
+  function isItemAllowedInArea(areaId, itemId) {
+    if (itemId === "tree-menu") {
+      return ns.State.sideAreaIds.has(areaId);
+    }
+
+    return true;
   }
 
   function setSelectedItem(instanceId) {
@@ -199,6 +213,10 @@
 
     if (item.id === "favorites") {
       return renderFavoritesEditor(selected, item, settings);
+    }
+
+    if (item.id === "tree-menu") {
+      return renderTreeMenuEditor(selected, item, settings);
     }
 
     return `
@@ -254,6 +272,41 @@
     `;
   }
 
+  function renderTreeMenuEditor(selected, item, settings) {
+    return `
+      <aside class="element-editor-panel tree-editor-panel">
+        <div class="element-editor-head">
+          <div>
+            <span>Tree menü yapısı</span>
+            <strong>${escapeHtml(item.label)}</strong>
+            <small>${escapeHtml(selected.area.label)} / ${escapeHtml(ns.State.slotLabels[selected.slot])}</small>
+          </div>
+          <button class="ghost-button" type="button" data-action="clear-item-edit">Katalog</button>
+        </div>
+
+        <section class="appearance-section">
+          <span class="setting-section-title">Görünüm tipi</span>
+          <div class="appearance-card-grid">
+            ${renderAppearanceCard(selected.instance.id, settings.variant, "nested", "İç içe liste", "Sol bar görünürken seviye girintileriyle ağaç olarak görünür.")}
+            ${renderAppearanceCard(selected.instance.id, settings.variant, "compact", "Kompakt liste", "Daha kısa satırlar ve kompakt spacing ile render olur.")}
+          </div>
+        </section>
+
+        <div class="element-editor-body" data-item-editor data-id="${selected.instance.id}">
+          ${renderSettingField({ key: "title", label: "Başlık", type: "text" }, settings.title || "")}
+          ${renderSettingField({ key: "icon", label: "Kompakt ikon", type: "text" }, settings.icon || "")}
+          ${renderSettingField({ key: "itemsText", label: "Ağaç öğeleri", type: "textarea", hint: "Her satır: level|etiket|href|ikon" }, settings.itemsText || "")}
+          <button class="save-settings-button" type="button" data-action="save-item-settings" data-id="${selected.instance.id}">Tree menüyü uygula</button>
+        </div>
+
+        <section class="tree-preview">
+          <span class="setting-section-title">Önizleme</span>
+          ${renderTreePreview(settings)}
+        </section>
+      </aside>
+    `;
+  }
+
   function renderAppearanceCard(instanceId, currentVariant, variant, title, description) {
     return `
       <button class="appearance-card ${currentVariant === variant ? "is-active" : ""}" type="button" data-action="set-item-setting" data-id="${instanceId}" data-key="variant" data-value="${variant}">
@@ -271,7 +324,22 @@
       auto: "otomatik",
       vertical: "dikey",
       horizontal: "yatay",
-      compact: "kompakt"
+      compact: "kompakt",
+      text: "text",
+      icon: "icon",
+      iconText: "icon + text",
+      primary: "primary",
+      secondary: "secondary",
+      danger: "danger",
+      ghost: "ghost",
+      soft: "soft",
+      solid: "solid",
+      outline: "outline",
+      nested: "iç içe",
+      inline: "satır içi",
+      stacked: "alt alta",
+      full: "tam",
+      avatar: "avatar"
     };
 
     return labels[variant] || variant;
@@ -311,6 +379,23 @@
         <summary>${escapeHtml(title)}</summary>
         ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
       </details>
+    `;
+  }
+
+  function renderTreePreview(settings) {
+    const entries = parseTreeItems(settings.itemsText);
+    const title = settings.title || "Tree menü";
+
+    return `
+      <div class="tree-preview-card">
+        <span>${escapeHtml(title)}</span>
+        ${entries.map((entry) => `
+          <a href="${escapeHtml(entry.href)}" style="--tree-level: ${entry.level}">
+            <i>${escapeHtml(entry.icon)}</i>
+            <strong>${escapeHtml(entry.label)}</strong>
+          </a>
+        `).join("")}
+      </div>
     `;
   }
 
@@ -361,9 +446,30 @@
           <article class="catalog-card">
             <strong>${escapeHtml(item.label)}</strong>
             <span>${escapeHtml(item.description)}</span>
+            ${renderCatalogSpec(item)}
           </article>
         `).join("")}
       </section>
+    `;
+  }
+
+  function renderCatalogSpec(item) {
+    const schema = ns.Catalog.getSettingSchema(item.id);
+    const visualKeys = new Set(["variant", "appearance", "orientation"]);
+    const visualFields = schema.filter((field) => visualKeys.has(field.key));
+    const dataFields = schema.filter((field) => !visualKeys.has(field.key));
+    const visualLabel = visualFields.length
+      ? visualFields.map((field) => field.label).join(", ")
+      : "Standart";
+    const dataLabel = dataFields.length
+      ? dataFields.map((field) => field.label).slice(0, 3).join(", ")
+      : "Yok";
+
+    return `
+      <small class="catalog-spec">
+        <span>Görsel: ${escapeHtml(visualLabel)}</span>
+        <span>Veri: ${escapeHtml(dataLabel)}</span>
+      </small>
     `;
   }
 
@@ -382,6 +488,30 @@
     return links.length ? links : [
       { label: "Müşteri panosu", href: "#/app/records" },
       { label: "Onay hattı", href: "#/app/workflows" }
+    ];
+  }
+
+  function parseTreeItems(value) {
+    const entries = String(value || "")
+      .split(/\r?\n/)
+      .map((line, index) => {
+        const [levelText, label, href, iconText] = line.split("|");
+        const parsedLevel = Number.parseInt(levelText, 10);
+        const safeLabel = (label || `Öğe ${index + 1}`).trim();
+
+        return {
+          level: Number.isFinite(parsedLevel) && parsedLevel > 0 ? Math.min(parsedLevel, 4) : 0,
+          label: safeLabel,
+          href: safeHref(href, "#"),
+          icon: (iconText || safeLabel.slice(0, 2)).trim().slice(0, 3).toUpperCase()
+        };
+      })
+      .filter((entry) => entry.label);
+
+    return entries.length ? entries : [
+      { level: 0, label: "Yönetim", href: "#/app/dashboard", icon: "YN" },
+      { level: 1, label: "Kullanıcılar", href: "#/app/records", icon: "KU" },
+      { level: 1, label: "Roller", href: "#/app/workflows", icon: "RO" }
     ];
   }
 
