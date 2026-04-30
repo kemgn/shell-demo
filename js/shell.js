@@ -1,6 +1,7 @@
 (function () {
   const ns = window.ShellStudio || (window.ShellStudio = {});
-  const { escapeHtml, icon } = ns.Utils;
+  const { escapeHtml, icon, svgIcon, safeHref } = ns.Utils;
+  let toolbarOpen = false;
 
   const navLinks = [
     { href: "#/app/dashboard", page: "dashboard", label: "Pano" },
@@ -15,15 +16,15 @@
     const rightMode = getSideMode(state, "rightBar");
     const headerMode = getChromeMode(state, "header");
     const footerMode = getChromeMode(state, "footer");
+    const isHeaderRail = headerMode === "left-rail";
 
     return `
       <div class="studio-shell">
-        <div class="shell-toolbar" aria-label="Uygulama kabuğu görünürlük kontrolleri">
-          ${ns.State.areas.map((area) => renderToolbarControl(area, state)).join("")}
-        </div>
+        ${renderShellToolbar(state)}
         <div class="app-frame ${frameClasses(state)}">
-          ${headerMode !== "hidden" ? renderHeader(state, route) : ""}
+          ${headerMode !== "hidden" && !isHeaderRail ? renderHeader(state, route) : ""}
           <div class="app-body">
+            ${isHeaderRail ? renderHeaderRail(state, route) : ""}
             ${leftMode !== "hidden" ? renderSide("leftBar", state, route) : ""}
             <main class="content-host" id="content" tabindex="-1">
               ${ns.Content.render(route)}
@@ -31,6 +32,20 @@
             ${rightMode !== "hidden" ? renderSide("rightBar", state, route) : ""}
           </div>
           ${footerMode !== "hidden" ? renderFooter(state, route) : ""}
+        </div>
+      </div>
+    `;
+  }
+
+  function renderShellToolbar(state) {
+    return `
+      <div class="shell-toolbar-drawer ${toolbarOpen ? "is-open" : ""}">
+        <button class="shell-toolbar-trigger" type="button" data-action="toggle-shell-toolbar" aria-expanded="${toolbarOpen ? "true" : "false"}" aria-label="Bar ayarlarını ${toolbarOpen ? "kapat" : "aç"}">
+          ${svgIcon("settings")}
+          <span>Bar ayarları</span>
+        </button>
+        <div class="shell-toolbar" aria-label="Uygulama kabuğu görünürlük kontrolleri">
+          ${ns.State.areas.map((area) => renderToolbarControl(area, state)).join("")}
         </div>
       </div>
     `;
@@ -73,10 +88,24 @@
   function renderAreaToggle(area, isOpen) {
     return `
       <button class="toolbar-pill ${isOpen ? "is-active" : ""}" type="button" data-action="toggle-area" data-area="${area.id}">
+        ${svgIcon(isOpen ? "eye" : "eye-off")}
         <span>${escapeHtml(area.label)}</span>
         <strong>${isOpen ? "açık" : "kapalı"}</strong>
       </button>
     `;
+  }
+
+  function renderModeIcon(modeId, areaId) {
+    const icons = {
+      visible: "eye",
+      icon: areaId === "rightBar" ? "panel-right" : "panel-left",
+      hover: "mouse",
+      compact: areaId === "footer" ? "panel-bottom" : "panel-top",
+      "left-rail": "panel-left",
+      hidden: "eye-off"
+    };
+
+    return svgIcon(icons[modeId] || "eye");
   }
 
   function renderSideModePicker(area, currentMode, context) {
@@ -85,8 +114,8 @@
         <span>${escapeHtml(area.label)}</span>
         <div>
           ${ns.State.sideModes.map((mode) => `
-            <button class="${mode.id === currentMode ? "is-active" : ""}" type="button" data-action="set-side-mode" data-area="${area.id}" data-mode="${mode.id}" title="${escapeHtml(mode.label)}">
-              ${escapeHtml(mode.label.slice(0, 1))}
+            <button class="${mode.id === currentMode ? "is-active" : ""}" type="button" data-action="set-side-mode" data-area="${area.id}" data-mode="${mode.id}" title="${escapeHtml(mode.label)}" aria-label="${escapeHtml(`${area.label}: ${mode.label}`)}">
+              ${renderModeIcon(mode.id, area.id)}
             </button>
           `).join("")}
         </div>
@@ -99,9 +128,9 @@
       <div class="side-mode-picker side-mode-picker-${context} chrome-mode-picker" aria-label="${escapeHtml(area.label)} modu">
         <span>${escapeHtml(area.label)}</span>
         <div>
-          ${ns.State.chromeModes.map((mode) => `
-            <button class="${mode.id === currentMode ? "is-active" : ""}" type="button" data-action="set-chrome-mode" data-area="${area.id}" data-mode="${mode.id}" title="${escapeHtml(mode.label)}">
-              ${escapeHtml(mode.label.slice(0, 1))}
+          ${ns.State.getChromeModes(area.id).map((mode) => `
+            <button class="${mode.id === currentMode ? "is-active" : ""}" type="button" data-action="set-chrome-mode" data-area="${area.id}" data-mode="${mode.id}" title="${escapeHtml(mode.label)}" aria-label="${escapeHtml(`${area.label}: ${mode.label}`)}">
+              ${renderModeIcon(mode.id, area.id)}
             </button>
           `).join("")}
         </div>
@@ -150,12 +179,11 @@
     const items = state.areas[areaId].slots[slot];
     const axis = ns.State.areas.find((area) => area.id === areaId).axis;
     const mode = areaMode || state.areas[areaId].mode || "visible";
+    const emptyClass = items.length ? "" : " is-empty";
 
     return `
-      <div class="shell-slot shell-slot-${slot} shell-slot-${axis}" data-area="${areaId}" data-slot="${slot}">
-        ${items.length ? items.map((instance) => renderSlotInstance(instance, areaId, axis, mode, route)).join("") : `
-          <span class="empty-slot">${escapeHtml(ns.State.slotLabels[slot])}</span>
-        `}
+      <div class="shell-slot shell-slot-${slot} shell-slot-${axis}${emptyClass}" data-area="${areaId}" data-slot="${slot}">
+        ${items.map((instance) => renderSlotInstance(instance, areaId, axis, mode, route)).join("")}
       </div>
     `;
   }
@@ -194,13 +222,14 @@
       const label = escapeHtml(item.label);
 
       if (href) {
-        return `<a class="${className} brand-compact-icon" href="${href}" aria-label="${label}" title="${label}">${brandIcon}</a>`;
+        return `<a class="${className} brand-compact-icon" href="${escapeHtml(href)}" aria-label="${label}" title="${label}">${brandIcon}</a>`;
       }
 
       return `<button class="${className} brand-compact-icon" type="button" aria-label="${label}" title="${label}">${brandIcon}</button>`;
     }
 
     const labelSource = settings.compactLabel
+      || settings.icon
       || settings.initials
       || settings.count
       || settings.title
@@ -216,7 +245,7 @@
     const badge = item.id === "notifications" ? `<span class="compact-badge">${escapeHtml(settings.count || "0")}</span>` : "";
 
     if (href) {
-      return `<a class="${className}" href="${href}" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(label)}${badge}</a>`;
+      return `<a class="${className}" href="${escapeHtml(href)}" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(label)}${badge}</a>`;
     }
 
     return `<button class="${className}" type="button" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(label)}${badge}</button>`;
@@ -245,6 +274,9 @@
       breadcrumbs: "#/app/dashboard",
       "primary-nav": "#/app/dashboard",
       favorites: "#/app/records",
+      button: "#/config",
+      "icon-button": "#/config",
+      "icon-text-button": "#/config",
       "command-button": "#/config",
       "quick-actions": "#/app/records",
       "ai-assistant": "#/config",
@@ -252,15 +284,54 @@
       "activity-feed": "#/app/workflows"
     };
 
-    if (itemId === "command-button" && settings.href) {
-      return settings.href;
+    if (["button", "icon-button", "icon-text-button", "command-button"].includes(itemId) && settings.href) {
+      return safeHref(settings.href, hrefs[itemId]);
     }
 
     if (itemId === "global-search") {
       return route.name === "config" ? "#/config" : `#/app/${route.page || "dashboard"}`;
     }
 
-    return hrefs[itemId] || "";
+    return safeHref(hrefs[itemId] || "", "");
+  }
+
+  function renderHeaderRail(state, route) {
+    return `
+      <aside class="chrome-header-rail" aria-label="Üst bar sol kompakt modu" data-mode="left-rail">
+        ${renderSlot("header", "left", state, route, "compact")}
+        ${renderSlot("header", "center", state, route, "compact")}
+        ${renderSlot("header", "right", state, route, "compact")}
+      </aside>
+    `;
+  }
+
+  function renderActionButton(settings, variant) {
+    const href = escapeHtml(safeHref(settings.href, "#/config"));
+    const label = escapeHtml(settings.label || "Aksiyon");
+    const rawIcon = settings.icon || (settings.label || "Aksiyon").slice(0, 2);
+
+    if (variant === "text") {
+      return `
+        <a class="shell-item shell-button shell-button-text" href="${href}">
+          <span>${label}</span>
+        </a>
+      `;
+    }
+
+    if (variant === "icon") {
+      return `
+        <a class="shell-item shell-button shell-button-icon" href="${href}" aria-label="${label}" title="${label}">
+          ${icon(rawIcon)}
+        </a>
+      `;
+    }
+
+    return `
+      <a class="shell-item shell-button shell-button-icon-text" href="${href}">
+        ${icon(rawIcon)}
+        <span>${label}</span>
+      </a>
+    `;
   }
 
   function renderShellItem(instance, areaId, route) {
@@ -313,9 +384,15 @@
             <input type="search" placeholder="${escapeHtml(settings.placeholder || "Kayıt, akış, sayfa...")}" aria-label="Genel arama">
           </label>
         `;
+      case "button":
+        return renderActionButton(settings, "text");
+      case "icon-button":
+        return renderActionButton(settings, "icon");
+      case "icon-text-button":
+        return renderActionButton(settings, "icon-text");
       case "command-button":
         return `
-          <a class="shell-item command-button" href="${escapeHtml(settings.href || "#/config")}">
+          <a class="shell-item command-button" href="${escapeHtml(safeHref(settings.href, "#/config"))}">
             ${icon("CMD")}
             <span>${escapeHtml(settings.label || "Yapılandır")}</span>
           </a>
@@ -400,7 +477,7 @@
             <i aria-hidden="true"></i>
           </summary>
           <div class="favorites-dropdown-menu">
-            ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
+            ${links.map(renderFavoriteLink).join("")}
           </div>
         </details>
       `;
@@ -410,7 +487,7 @@
       return `
         <div class="shell-item stacked-card">
           <span class="mini-title">${escapeHtml(title)}</span>
-          ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
+          ${links.map(renderFavoriteLink).join("")}
         </div>
       `;
     }
@@ -418,24 +495,29 @@
     return `
       <details class="shell-item stacked-card favorites-menu favorites-menu-collapse" open>
         <summary>${escapeHtml(title)}</summary>
-        ${links.map((link) => `<a href="${escapeHtml(link.href)}">${escapeHtml(link.label)}</a>`).join("")}
+        ${links.map(renderFavoriteLink).join("")}
       </details>
     `;
+  }
+
+  function renderFavoriteLink(link) {
+    return `<a href="${escapeHtml(safeHref(link.href, "#"))}">${escapeHtml(link.label)}</a>`;
   }
 
   function renderWorkspaceSwitcher(instanceId, settings) {
     const workspaces = parseWorkspaces(settings.workspacesText);
     const activeWorkspace = workspaces.find((workspace) => workspace.id === settings.activeWorkspaceId)
       || workspaces[0];
-    const activeLabel = settings.label || activeWorkspace.label;
-    const activeInitials = settings.initials || activeWorkspace.initials;
+    const eyebrow = settings.eyebrow || "";
+    const activeLabel = activeWorkspace.label;
+    const activeInitials = activeWorkspace.initials;
 
     return `
       <details class="shell-item workspace-switcher-menu">
         <summary>
           <span class="workspace-avatar">${escapeHtml(activeInitials)}</span>
           <span class="workspace-summary-text">
-            <small>${escapeHtml(settings.eyebrow || "Çalışma alanı")}</small>
+            ${eyebrow ? `<small>${escapeHtml(eyebrow)}</small>` : ""}
             <strong>${escapeHtml(activeLabel)}</strong>
           </span>
           <i aria-hidden="true"></i>
@@ -443,11 +525,11 @@
         <div class="workspace-menu-panel">
           <label class="workspace-search">
             <span aria-hidden="true">⌕</span>
-            <input type="search" placeholder="Ara" aria-label="Çalışma alanı ara" data-workspace-search>
+            <input type="search" placeholder="Ara" aria-label="Sayfa ara" data-workspace-search>
           </label>
           <div class="workspace-option-list">
             ${workspaces.map((workspace) => renderWorkspaceOption(instanceId, workspace, activeWorkspace.id)).join("")}
-            <span class="workspace-empty" hidden>Eşleşen çalışma alanı yok</span>
+            <span class="workspace-empty" hidden>Eşleşen sayfa yok</span>
           </div>
         </div>
       </details>
@@ -458,7 +540,7 @@
     const isActive = workspace.id === activeWorkspaceId;
 
     return `
-      <button class="workspace-option ${isActive ? "is-active" : ""}" type="button" data-action="select-workspace" data-id="${instanceId}" data-workspace-id="${escapeHtml(workspace.id)}" data-label="${escapeHtml(workspace.label)}" data-initials="${escapeHtml(workspace.initials)}" data-search-key="${escapeHtml(`${workspace.initials} ${workspace.label}`.toLowerCase())}">
+      <button class="workspace-option ${isActive ? "is-active" : ""}" type="button" data-action="select-workspace" data-id="${instanceId}" data-workspace-id="${escapeHtml(workspace.id)}" data-search-key="${escapeHtml(`${workspace.initials} ${workspace.label}`.toLowerCase())}">
         <span class="workspace-avatar">${escapeHtml(workspace.initials)}</span>
         <strong>${escapeHtml(workspace.label)}</strong>
         ${isActive ? `<span class="workspace-check" aria-label="Seçili">✓</span>` : ""}
@@ -469,7 +551,7 @@
   function parseWorkspaces(value) {
     const workspaces = parseLines(value).map((line, index) => {
       const [id, initials, label] = line.split("|");
-      const safeLabel = (label || initials || id || `Çalışma alanı ${index + 1}`).trim();
+      const safeLabel = (label || initials || id || `Sayfa ${index + 1}`).trim();
 
       return {
         id: (id || `workspace-${index + 1}`).trim(),
@@ -479,8 +561,11 @@
     }).filter((workspace) => workspace.label);
 
     return workspaces.length ? workspaces : [
-      { id: "pipipipipi", initials: "PW", label: "Pipipipipi’nin çalışma alanı" },
-      { id: "untitled", initials: "UW", label: "Adsız çalışma alanı" }
+      { id: "benim-sayfam", initials: "BS", label: "Benim Sayfam" },
+      { id: "arge", initials: "AR", label: "AR-GE" },
+      { id: "danismanlik", initials: "DN", label: "Danışmanlık" },
+      { id: "pentest", initials: "PT", label: "Pentest" },
+      { id: "egitimler", initials: "EG", label: "Eğitimler" }
     ];
   }
 
@@ -496,7 +581,7 @@
       const [label, href] = line.split("|");
       return {
         label: (label || "").trim(),
-        href: (href || "#").trim()
+        href: safeHref(href, "#")
       };
     }).filter((link) => link.label);
 
@@ -517,6 +602,10 @@
   ns.Shell = {
     render,
     renderSideModePicker,
-    renderChromeModePicker
+    renderChromeModePicker,
+    isToolbarOpen: () => toolbarOpen,
+    setToolbarOpen: (isOpen) => {
+      toolbarOpen = Boolean(isOpen);
+    }
   };
 })();

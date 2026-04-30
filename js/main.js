@@ -18,6 +18,12 @@
 
       const action = control.dataset.action;
 
+      if (action === "toggle-shell-toolbar") {
+        ns.Shell.setToolbarOpen(!ns.Shell.isToolbarOpen());
+        ns.Router.render();
+        return;
+      }
+
       if (action === "toggle-area") {
         ns.State.toggleArea(control.dataset.area);
         return;
@@ -78,9 +84,7 @@
 
       if (action === "select-workspace") {
         ns.State.updateItemSettings(control.dataset.id, {
-          activeWorkspaceId: control.dataset.workspaceId,
-          label: control.dataset.label,
-          initials: control.dataset.initials
+          activeWorkspaceId: control.dataset.workspaceId
         });
         return;
       }

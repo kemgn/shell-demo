@@ -1,6 +1,6 @@
 (function () {
   const ns = window.ShellStudio || (window.ShellStudio = {});
-  const { escapeHtml } = ns.Utils;
+  const { escapeHtml, safeHref, svgIcon } = ns.Utils;
   let activeAreaId = "header";
   let selectedInstanceId = "";
 
@@ -108,17 +108,25 @@
           <small>${items.length} öğe</small>
         </div>
         <div class="config-item-list">
-          ${items.length ? items.map((instance, index) => renderConfigItem(area.id, slot, instance, index, items.length)).join("") : `
-            <div class="empty-config-slot">Bu slot boş. Katalogdan bir öğe ekle.</div>
-          `}
-        </div>
-        <div class="add-row">
-          <select data-add-select aria-label="${escapeHtml(area.label)} ${escapeHtml(slot)} öğe seçimi">
-            ${renderCatalogOptions()}
-          </select>
-          <button class="add-button" type="button" data-action="add-item" data-area="${area.id}" data-slot="${slot}">Ekle</button>
+          ${renderSlotAddRow(area, slot)}
+          <div class="slot-items-scroll">
+            ${items.length ? items.map((instance, index) => renderConfigItem(area.id, slot, instance, index, items.length)).join("") : `
+              <div class="empty-config-slot">Bu slot boş. Katalogdan bir öğe ekle.</div>
+            `}
+          </div>
         </div>
       </section>
+    `;
+  }
+
+  function renderSlotAddRow(area, slot) {
+    return `
+      <div class="add-row slot-add-row">
+        <select data-add-select aria-label="${escapeHtml(area.label)} ${escapeHtml(slot)} öğe seçimi">
+          ${renderCatalogOptions()}
+        </select>
+        <button class="add-button" type="button" data-action="add-item" data-area="${area.id}" data-slot="${slot}">Ekle</button>
+      </div>
     `;
   }
 
@@ -134,10 +142,10 @@
           <small>${escapeHtml(getCategoryLabel(item.category))}${settings.variant ? ` / ${escapeHtml(getVariantLabel(settings.variant))}` : ""}</small>
         </div>
         <div class="item-row-actions">
-          <button class="customize-button" type="button" data-action="edit-item" data-id="${instance.id}">Özelleştir</button>
-          <button type="button" data-action="move-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}" data-direction="up" ${index === 0 ? "disabled" : ""}>Yukarı</button>
-          <button type="button" data-action="move-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}" data-direction="down" ${index === count - 1 ? "disabled" : ""}>Aşağı</button>
-          <button type="button" data-action="remove-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}">Kaldır</button>
+          <button class="customize-button" type="button" data-action="edit-item" data-id="${instance.id}" title="Özelleştir" aria-label="${escapeHtml(`${item.label} özelleştir`)}">${svgIcon("pencil")}</button>
+          <button type="button" data-action="move-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}" data-direction="up" title="Yukarı taşı" aria-label="${escapeHtml(`${item.label} yukarı taşı`)}" ${index === 0 ? "disabled" : ""}>${svgIcon("arrow-up")}</button>
+          <button type="button" data-action="move-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}" data-direction="down" title="Aşağı taşı" aria-label="${escapeHtml(`${item.label} aşağı taşı`)}" ${index === count - 1 ? "disabled" : ""}>${svgIcon("arrow-down")}</button>
+          <button type="button" data-action="remove-item" data-area="${areaId}" data-slot="${slot}" data-id="${instance.id}" title="Kaldır" aria-label="${escapeHtml(`${item.label} kaldır`)}">${svgIcon("trash")}</button>
         </div>
       </div>
     `;
@@ -366,7 +374,7 @@
         const [label, href] = line.split("|");
         return {
           label: (label || "").trim(),
-          href: (href || "#").trim()
+          href: safeHref(href, "#")
         };
       })
       .filter((link) => link.label);

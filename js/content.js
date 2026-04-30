@@ -105,27 +105,27 @@
           </a>
         </section>
 
-        <section class="app-summary-strip">
+        <section class="app-summary-strip" aria-label="Özet göstergeler">
           ${options.stats.map((stat) => renderAppStat(stat[0], stat[1], stat[2])).join("")}
         </section>
 
         <section class="app-workbench">
-          <article class="app-panel app-panel-main">
-            <div class="app-panel-head">
+          <div class="app-workbench-main">
+            <div class="app-section-head">
               <span>Çalışma alanı</span>
               <strong>${escapeHtml(meta.label)}</strong>
             </div>
             <div class="app-list">
               ${options.rows.map((row) => renderAppRow(row[0], row[1], row[2])).join("")}
             </div>
-          </article>
-          <aside class="app-panel app-panel-side">
-            <div class="app-panel-head">
+          </div>
+          <aside class="app-context-rail">
+            <div class="app-section-head">
               <span>İnceleyici</span>
               <strong>${escapeHtml(options.sideTitle)}</strong>
             </div>
             <div class="app-note-stack">
-              ${options.sideLines.map((line) => `<span>${escapeHtml(line)}</span>`).join("")}
+              ${options.sideLines.map((line) => `<div>${escapeHtml(line)}</div>`).join("")}
             </div>
           </aside>
         </section>
@@ -135,23 +135,23 @@
 
   function renderAppStat(label, value, note) {
     return `
-      <article class="app-stat">
+      <div class="app-stat">
         <span>${escapeHtml(label)}</span>
         <strong>${escapeHtml(value)}</strong>
         <small>${escapeHtml(note)}</small>
-      </article>
+      </div>
     `;
   }
 
   function renderAppRow(title, status, detail) {
     return `
-      <article class="app-list-row">
+      <div class="app-list-row">
         <div>
           <strong>${escapeHtml(title)}</strong>
           <small>${escapeHtml(detail)}</small>
         </div>
         <span>${escapeHtml(status)}</span>
-      </article>
+      </div>
     `;
   }
 

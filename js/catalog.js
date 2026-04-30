@@ -19,9 +19,9 @@
     },
     {
       id: "workspace-switcher",
-      label: "Çalışma alanı seçici",
+      label: "Sayfa seçici",
       category: "identity",
-      description: "Müşteri, kiracı veya uygulama alanı seçimi."
+      description: "Sayfa, hizmet veya uygulama alanı seçimi."
     },
     {
       id: "user-menu",
@@ -58,6 +58,24 @@
       label: "Genel arama",
       category: "actions",
       description: "Kayıt, akış ve ekran arama alanı."
+    },
+    {
+      id: "button",
+      label: "Button",
+      category: "actions",
+      description: "Tek metinli aksiyon butonu."
+    },
+    {
+      id: "icon-button",
+      label: "Icon button",
+      category: "actions",
+      description: "Sadece ikon gösteren kompakt aksiyon."
+    },
+    {
+      id: "icon-text-button",
+      label: "Icon + button",
+      category: "actions",
+      description: "İkon ve metni birlikte gösteren aksiyon butonu."
     },
     {
       id: "command-button",
@@ -135,11 +153,9 @@
   const defaultSettings = {
     brand: { label: "Optimate Solutions", compactLabel: "O" },
     "workspace-switcher": {
-      label: "Pipipipipi’nin çalışma alanı",
-      eyebrow: "Çalışma alanı",
-      activeWorkspaceId: "pipipipipi",
-      initials: "PW",
-      workspacesText: "pipipipipi|PW|Pipipipipi’nin çalışma alanı\nuntitled|UW|Adsız çalışma alanı"
+      eyebrow: "",
+      activeWorkspaceId: "benim-sayfam",
+      workspacesText: "benim-sayfam|BS|Benim Sayfam\narge|AR|AR-GE\ndanismanlik|DN|Danışmanlık\npentest|PT|Pentest\negitimler|EG|Eğitimler"
     },
     "user-menu": { label: "Mimar", initials: "KG" },
     breadcrumbs: { rootLabel: "Stüdyo" },
@@ -150,6 +166,9 @@
       linksText: "Müşteri panosu|#/app/records\nOnay hattı|#/app/workflows"
     },
     "global-search": { placeholder: "Kayıt, akış, sayfa..." },
+    button: { label: "Yeni kayıt", href: "#/config" },
+    "icon-button": { label: "Ekle", icon: "+", href: "#/config" },
+    "icon-text-button": { label: "Yeni kayıt", icon: "+", href: "#/config" },
     "command-button": { label: "Yapılandır", href: "#/config" },
     "quick-actions": {
       title: "Hızlı işlemler",
@@ -174,9 +193,7 @@
     ],
     "workspace-switcher": [
       { key: "eyebrow", label: "Üst etiket", type: "text" },
-      { key: "label", label: "Aktif çalışma alanı", type: "text" },
-      { key: "initials", label: "Aktif ikon", type: "text" },
-      { key: "workspacesText", label: "Çalışma alanları", type: "textarea", hint: "Her satır: id|baş harf|ad" }
+      { key: "workspacesText", label: "Sayfalar", type: "textarea", hint: "Her satır: id|baş harf|ad" }
     ],
     "user-menu": [
       { key: "initials", label: "Baş harfler", type: "text" },
@@ -198,6 +215,20 @@
     ],
     "global-search": [
       { key: "placeholder", label: "Yer tutucu", type: "text" }
+    ],
+    button: [
+      { key: "label", label: "Buton etiketi", type: "text" },
+      { key: "href", label: "Bağlantı", type: "text" }
+    ],
+    "icon-button": [
+      { key: "label", label: "Erişilebilir etiket", type: "text" },
+      { key: "icon", label: "İkon", type: "text", hint: "Tek karakter veya kısa metin." },
+      { key: "href", label: "Bağlantı", type: "text" }
+    ],
+    "icon-text-button": [
+      { key: "label", label: "Buton etiketi", type: "text" },
+      { key: "icon", label: "İkon", type: "text", hint: "Tek karakter veya kısa metin." },
+      { key: "href", label: "Bağlantı", type: "text" }
     ],
     "command-button": [
       { key: "label", label: "Buton etiketi", type: "text" },

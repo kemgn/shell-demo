@@ -1,7 +1,7 @@
 (function () {
   const ns = window.ShellStudio || (window.ShellStudio = {});
 
-  const STORAGE_KEY = "shell-demo:v2";
+  const STORAGE_KEY = "shell-demo:v4";
 
   const areas = [
     { id: "header", label: "Üst bar", axis: "horizontal" },
@@ -20,6 +20,13 @@
   const chromeModes = [
     { id: "visible", label: "Görünür" },
     { id: "compact", label: "Kompakt" },
+    { id: "hidden", label: "Gizli" }
+  ];
+
+  const headerChromeModes = [
+    { id: "visible", label: "Görünür" },
+    { id: "compact", label: "Kompakt" },
+    { id: "left-rail", label: "Sol kompakt" },
     { id: "hidden", label: "Gizli" }
   ];
 
@@ -56,7 +63,7 @@
   };
 
   const defaultState = {
-    version: 1,
+    version: 4,
     frameLayout: "classic",
     areas: {
       header: {
@@ -64,15 +71,13 @@
         mode: "visible",
         slots: {
           left: [
-            { id: "default-brand", itemId: "brand" },
-            { id: "default-workspace-switcher", itemId: "workspace-switcher" }
+            { id: "default-brand", itemId: "brand" }
           ],
           center: [
-            { id: "default-breadcrumbs", itemId: "breadcrumbs" }
+            { id: "default-workspace-switcher", itemId: "workspace-switcher" }
           ],
           right: [
-            { id: "default-global-search", itemId: "global-search" },
-            { id: "default-notifications", itemId: "notifications" },
+            { id: "default-header-action", itemId: "button" },
             { id: "default-user-menu", itemId: "user-menu" }
           ]
         }
@@ -84,18 +89,13 @@
           top: [
             { id: "default-primary-nav", itemId: "primary-nav" }
           ],
-          middle: [
-            { id: "default-workspace-status", itemId: "workspace-status" },
-            { id: "default-favorites", itemId: "favorites" }
-          ],
-          bottom: [
-            { id: "default-ai-assistant", itemId: "ai-assistant" }
-          ]
+          middle: [],
+          bottom: []
         }
       },
       rightBar: {
-        isOpen: true,
-        mode: "visible",
+        isOpen: false,
+        mode: "hidden",
         slots: {
           top: [
             { id: "default-inspector-summary", itemId: "inspector-summary" }
@@ -110,8 +110,8 @@
         }
       },
       footer: {
-        isOpen: true,
-        mode: "visible",
+        isOpen: false,
+        mode: "hidden",
         slots: {
           left: [
             { id: "default-environment-chip", itemId: "environment-chip" }
@@ -144,6 +144,31 @@
     };
   }
 
+  function getChromeModes(areaId) {
+    return areaId === "header" ? headerChromeModes : chromeModes;
+  }
+
+  function normalizeItemSettings(itemId, settings) {
+    const merged = ns.Catalog.mergeSettings(itemId, settings);
+
+    if (itemId !== "workspace-switcher") {
+      return merged;
+    }
+
+    const legacyText = [
+      merged.activeWorkspaceId,
+      merged.eyebrow,
+      merged.label,
+      merged.workspacesText
+    ].join(" ").toLocaleLowerCase("tr-TR");
+
+    if (legacyText.includes("pipipipipi") || legacyText.includes("çalışma alanı")) {
+      return ns.Catalog.getDefaultSettings(itemId);
+    }
+
+    return merged;
+  }
+
   function normalize(candidate) {
     const next = clone(defaultState);
     const source = candidate && candidate.areas ? candidate : {};
@@ -160,7 +185,7 @@
         : sourceArea.isOpen === false
           ? "hidden"
           : "visible";
-      const sourceChromeMode = chromeModes.some((mode) => mode.id === sourceArea.mode)
+      const sourceChromeMode = getChromeModes(area.id).some((mode) => mode.id === sourceArea.mode)
         ? sourceArea.mode
         : sourceArea.isOpen === false
           ? "hidden"
@@ -186,7 +211,7 @@
           .map((item) => ({
             id: item.id || createInstance(item.itemId).id,
             itemId: item.itemId,
-            settings: ns.Catalog.mergeSettings(item.itemId, item.settings)
+            settings: normalizeItemSettings(item.itemId, item.settings)
           }));
       });
     });
@@ -275,7 +300,7 @@
   }
 
   function setChromeMode(areaId, mode) {
-    if (!chromeAreaIds.has(areaId) || !chromeModes.some((chromeMode) => chromeMode.id === mode)) {
+    if (!chromeAreaIds.has(areaId) || !getChromeModes(areaId).some((chromeMode) => chromeMode.id === mode)) {
       return;
     }
 
@@ -377,6 +402,7 @@
     areas,
     sideModes,
     chromeModes,
+    headerChromeModes,
     frameLayouts,
     sideAreaIds,
     chromeAreaIds,
@@ -390,6 +416,7 @@
     toggleArea,
     setSideMode,
     setChromeMode,
+    getChromeModes,
     setFrameLayout,
     addItem,
     removeItem,
