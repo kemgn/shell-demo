@@ -864,7 +864,7 @@ a {
 
 .brand-compact-icon img {
   display: block;
-  width: auto;
+  width: 100%;
   height: 100%;
   object-fit: contain;
   transform: translateY(-3px);
@@ -1023,7 +1023,8 @@ a {
 .chrome-footer .brand-item-logo,
 .chrome-footer .brand-item-logo-compact,
 .chrome-header .brand-compact-icon,
-.chrome-footer .brand-compact-icon {
+.chrome-footer .brand-compact-icon,
+.chrome-header-rail .brand-compact-icon {
   border: 0;
   background: transparent;
   box-shadow: none;
@@ -1070,7 +1071,7 @@ a {
 }
 
 .brand-item-logo-compact img {
-  width: auto;
+  width: 100%;
   height: 100%;
   max-height: none;
   object-fit: contain;
@@ -4157,7 +4158,7 @@ body[data-route="config"] .config-layout {
   border: 0;
   background: transparent;
   box-shadow: none;
-  overflow: visible;
+  overflow: hidden;
 }
 
 .chrome-header .shell-slot-right,
@@ -5693,10 +5694,22 @@ body[data-route="config"] .config-layout.has-element-editor {
 }
 
 .chrome-header .brand-item-logo-compact,
-.chrome-header .brand-compact-icon {
+.chrome-header .brand-compact-icon,
+.chrome-header-rail .brand-compact-icon {
   width: 42px;
   min-width: 42px;
   height: 42px;
   min-height: 42px;
   padding: 6px;
+  border: 0;
+  background: transparent;
+  box-shadow: none;
+  overflow: hidden;
+}
+
+.chrome-header-rail .compact-item.brand-compact-icon,
+.chrome-header-rail .rail-icon.brand-compact-icon {
+  border: 0;
+  background: transparent;
+  box-shadow: none;
 }
