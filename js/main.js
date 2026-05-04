@@ -117,7 +117,38 @@
       }
     });
 
+    document.body.addEventListener("change", (event) => {
+      const savedLayoutSelect = event.target.closest("[data-saved-layout-select]");
+
+      if (!savedLayoutSelect || !savedLayoutSelect.value) {
+        return;
+      }
+
+      if (savedLayoutSelect.value === "default-layout") {
+        ns.State.reset();
+        return;
+      }
+
+      ns.State.applySavedLayout(savedLayoutSelect.value);
+    });
+
     document.body.addEventListener("input", (event) => {
+      const catalogSearch = event.target.closest("[data-catalog-search]");
+
+      if (catalogSearch) {
+        ns.Config.setCatalogSearchQuery(catalogSearch.value);
+        ns.Router.render();
+
+        const nextSearch = document.querySelector("[data-catalog-search]");
+
+        if (nextSearch) {
+          nextSearch.focus();
+          nextSearch.setSelectionRange(nextSearch.value.length, nextSearch.value.length);
+        }
+
+        return;
+      }
+
       const search = event.target.closest("[data-workspace-search]");
 
       if (!search) {

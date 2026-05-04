@@ -3,6 +3,7 @@
   const { escapeHtml, safeHref, svgIcon } = ns.Utils;
   let activeAreaId = "header";
   let selectedInstanceId = "";
+  let catalogSearchQuery = "";
 
   function render() {
     const state = ns.State.get();
@@ -135,12 +136,13 @@
     const item = ns.Catalog.getItem(instance.itemId);
     const settings = ns.Catalog.mergeSettings(instance.itemId, instance.settings);
     const isSelected = selectedInstanceId === instance.id;
+    const title = getConfigItemTitle(item, settings);
 
     return `
       <div class="config-item-row ${isSelected ? "is-selected" : ""}">
         <div>
-          <strong>${escapeHtml(item.label)}</strong>
-          <small>${escapeHtml(getCategoryLabel(item.category))}${settings.variant ? ` / ${escapeHtml(getVariantLabel(settings.variant))}` : ""}</small>
+          <strong>${escapeHtml(title)}</strong>
+          <small>${title !== item.label ? `${escapeHtml(item.label)} / ` : ""}${escapeHtml(getCategoryLabel(item.category))}${settings.variant ? ` / ${escapeHtml(getVariantLabel(settings.variant))}` : ""}</small>
         </div>
         <div class="item-row-actions">
           <button class="customize-button" type="button" data-action="edit-item" data-id="${instance.id}" title="Özelleştir" aria-label="${escapeHtml(`${item.label} özelleştir`)}">${svgIcon("pencil")}</button>
@@ -150,6 +152,14 @@
         </div>
       </div>
     `;
+  }
+
+  function getConfigItemTitle(item, settings) {
+    if (item.id === "button" && settings.label) {
+      return settings.label;
+    }
+
+    return item.label;
   }
 
   function renderCatalogOptions(area) {
@@ -192,16 +202,25 @@
       return renderElementEditor(selected);
     }
 
+    const renderedCategories = ns.Catalog.categories
+      .map((category) => renderCatalogCategory(category))
+      .filter(Boolean)
+      .join("");
+
     return `
       <aside class="catalog-panel">
         <div class="catalog-panel-head">
           <div>
             <span>Kullanılabilir öğeler</span>
-            <strong>${ns.Catalog.items.length} blok</strong>
+            <strong>${getCatalogResultCount()} blok</strong>
           </div>
           <button class="mini-danger-button" type="button" data-action="reset-config">Sıfırla</button>
         </div>
-        ${ns.Catalog.categories.map(renderCatalogCategory).join("")}
+        <label class="catalog-search">
+          ${svgIcon("eye")}
+          <input type="search" value="${escapeHtml(catalogSearchQuery)}" placeholder="Katalogda ara" aria-label="Katalogda ara" data-catalog-search>
+        </label>
+        ${renderedCategories || `<div class="catalog-empty">Bu aramada gösterilecek blok yok.</div>`}
       </aside>
     `;
   }
@@ -219,6 +238,10 @@
       return renderTreeMenuEditor(selected, item, settings);
     }
 
+    if (item.id === "button") {
+      return renderButtonEditor(selected, item, settings, schema);
+    }
+
     return `
       <aside class="element-editor-panel">
         <div class="element-editor-head">
@@ -230,10 +253,55 @@
           <button class="ghost-button" type="button" data-action="clear-item-edit">Katalog</button>
         </div>
         <div class="element-editor-body" data-item-editor data-id="${selected.instance.id}">
-          ${schema.map((field) => renderSettingField(field, settings[field.key] || "")).join("")}
+          ${renderSettingSections(schema, settings)}
           <button class="save-settings-button" type="button" data-action="save-item-settings" data-id="${selected.instance.id}">Ayarları uygula</button>
         </div>
       </aside>
+    `;
+  }
+
+  function renderButtonEditor(selected, item, settings, schema) {
+    return `
+      <aside class="element-editor-panel button-editor-panel">
+        <div class="element-editor-head">
+          <div>
+            <span>Aksiyon ailesi</span>
+            <strong>${escapeHtml(item.label)}</strong>
+            <small>${escapeHtml(selected.area.label)} / ${escapeHtml(ns.State.slotLabels[selected.slot])}</small>
+          </div>
+          <button class="ghost-button" type="button" data-action="clear-item-edit">Katalog</button>
+        </div>
+
+        <section class="button-preview-section">
+          <span class="setting-section-title">Varyasyon</span>
+          <div class="button-preview-grid">
+            ${renderButtonVariantPreview(selected.instance.id, settings, "text", "Text")}
+            ${renderButtonVariantPreview(selected.instance.id, settings, "icon", "Icon")}
+            ${renderButtonVariantPreview(selected.instance.id, settings, "iconText", "Icon + text")}
+          </div>
+        </section>
+
+        <div class="element-editor-body" data-item-editor data-id="${selected.instance.id}">
+          ${renderSettingSections(schema.filter((field) => field.key !== "variant"), settings)}
+          <button class="save-settings-button" type="button" data-action="save-item-settings" data-id="${selected.instance.id}">Button ayarlarını uygula</button>
+        </div>
+      </aside>
+    `;
+  }
+
+  function renderButtonVariantPreview(instanceId, settings, variant, title) {
+    const isActive = (settings.variant || "text") === variant;
+    const label = settings.label || "Yeni kayıt";
+    const glyph = settings.icon || "+";
+
+    return `
+      <button class="button-preview-card ${isActive ? "is-active" : ""}" type="button" data-action="set-item-setting" data-id="${instanceId}" data-key="variant" data-value="${variant}">
+        <span class="button-preview-surface button-preview-${variant}">
+          ${variant !== "text" ? `<i>${escapeHtml(glyph)}</i>` : ""}
+          ${variant !== "icon" ? `<strong>${escapeHtml(label)}</strong>` : ""}
+        </span>
+        <small>${escapeHtml(title)}</small>
+      </button>
     `;
   }
 
@@ -435,8 +503,37 @@
     `;
   }
 
+  function renderSettingSections(schema, settings) {
+    const visualKeys = new Set(["variant", "appearance", "orientation"]);
+    const visualFields = schema.filter((field) => visualKeys.has(field.key));
+    const dataFields = schema.filter((field) => !visualKeys.has(field.key));
+
+    return `
+      ${renderSettingGroup("Görsel", visualFields, settings)}
+      ${renderSettingGroup("Veri", dataFields, settings)}
+    `;
+  }
+
+  function renderSettingGroup(title, fields, settings) {
+    if (!fields.length) {
+      return "";
+    }
+
+    return `
+      <section class="setting-group">
+        <span class="setting-section-title">${escapeHtml(title)}</span>
+        ${fields.map((field) => renderSettingField(field, settings[field.key] || "")).join("")}
+      </section>
+    `;
+  }
+
   function renderCatalogCategory(category) {
-    const items = ns.Catalog.getItemsByCategory(category.id);
+    const items = ns.Catalog.getItemsByCategory(category.id)
+      .filter((item) => matchesCatalogQuery(category, item));
+
+    if (!items.length) {
+      return "";
+    }
 
     return `
       <section class="catalog-group">
@@ -451,6 +548,30 @@
         `).join("")}
       </section>
     `;
+  }
+
+  function getCatalogResultCount() {
+    return ns.Catalog.categories.reduce((total, category) => {
+      return total + ns.Catalog.getItemsByCategory(category.id)
+        .filter((item) => matchesCatalogQuery(category, item))
+        .length;
+    }, 0);
+  }
+
+  function matchesCatalogQuery(category, item) {
+    const query = catalogSearchQuery.trim().toLocaleLowerCase("tr-TR");
+
+    if (!query) {
+      return true;
+    }
+
+    return [
+      category.label,
+      category.note,
+      item.label,
+      item.description,
+      item.id
+    ].join(" ").toLocaleLowerCase("tr-TR").includes(query);
   }
 
   function renderCatalogSpec(item) {
@@ -515,10 +636,15 @@
     ];
   }
 
+  function setCatalogSearchQuery(value) {
+    catalogSearchQuery = String(value || "");
+  }
+
   ns.Config = {
     render,
     setActiveArea,
     setSelectedItem,
-    clearSelectedItem
+    clearSelectedItem,
+    setCatalogSearchQuery
   };
 })();

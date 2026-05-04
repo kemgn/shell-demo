@@ -25,8 +25,23 @@
     pencil: '<path d="M12 20h9"></path><path d="M16.5 3.5a2.1 2.1 0 0 1 3 3L7 19l-4 1 1-4 12.5-12.5Z"></path>',
     "arrow-up": '<path d="m12 5-6 6"></path><path d="m12 5 6 6"></path><path d="M12 5v14"></path>',
     "arrow-down": '<path d="M12 5v14"></path><path d="m18 13-6 6"></path><path d="m6 13 6 6"></path>',
+    "chevrons-left": '<path d="m11 17-5-5 5-5"></path><path d="m18 17-5-5 5-5"></path>',
+    "chevrons-right": '<path d="m6 17 5-5-5-5"></path><path d="m13 17 5-5-5-5"></path>',
     trash: '<path d="M3 6h18"></path><path d="M8 6V4h8v2"></path><path d="M19 6l-1 14H6L5 6"></path><path d="M10 11v5"></path><path d="M14 11v5"></path>',
     settings: '<path d="M12 15.5A3.5 3.5 0 1 0 12 8a3.5 3.5 0 0 0 0 7.5Z"></path><path d="M19.4 15a1.7 1.7 0 0 0 .3 1.9l.1.1a2 2 0 1 1-2.8 2.8l-.1-.1a1.7 1.7 0 0 0-1.9-.3 1.7 1.7 0 0 0-1 1.6V21a2 2 0 1 1-4 0v-.1a1.7 1.7 0 0 0-1-1.6 1.7 1.7 0 0 0-1.9.3l-.1.1A2 2 0 1 1 4.2 17l.1-.1A1.7 1.7 0 0 0 4.6 15a1.7 1.7 0 0 0-1.6-1H3a2 2 0 1 1 0-4h.1a1.7 1.7 0 0 0 1.6-1 1.7 1.7 0 0 0-.3-1.9L4.2 7A2 2 0 1 1 7 4.2l.1.1A1.7 1.7 0 0 0 9 4.6a1.7 1.7 0 0 0 1-1.6V3a2 2 0 1 1 4 0v.1a1.7 1.7 0 0 0 1 1.6 1.7 1.7 0 0 0 1.9-.3l.1-.1A2 2 0 1 1 19.8 7l-.1.1a1.7 1.7 0 0 0-.3 1.9 1.7 1.7 0 0 0 1.6 1h.1a2 2 0 1 1 0 4H21a1.7 1.7 0 0 0-1.6 1Z"></path>',
+    search: '<circle cx="11" cy="11" r="7"></circle><path d="m20 20-3.5-3.5"></path>',
+    bell: '<path d="M18 8a6 6 0 0 0-12 0c0 7-3 7-3 9h18c0-2-3-2-3-9"></path><path d="M10 21h4"></path>',
+    star: '<path d="m12 3 2.9 5.9 6.5.9-4.7 4.6 1.1 6.5-5.8-3.1-5.8 3.1 1.1-6.5-4.7-4.6 6.5-.9L12 3Z"></path>',
+    command: '<path d="M9 6a3 3 0 1 0-3 3h12a3 3 0 1 0-3-3v12a3 3 0 1 0 3-3H6a3 3 0 1 0 3 3V6Z"></path>',
+    bot: '<rect x="5" y="8" width="14" height="10" rx="3"></rect><path d="M12 5v3"></path><path d="M8.5 12h.01"></path><path d="M15.5 12h.01"></path><path d="M9 16h6"></path>',
+    status: '<path d="M4 12h5l2-7 2 14 2-7h5"></path>',
+    sync: '<path d="M21 12a9 9 0 0 1-15.5 6.2L3 16"></path><path d="M3 16h5v5"></path><path d="M3 12A9 9 0 0 1 18.5 5.8L21 8"></path><path d="M16 3h5v5"></path>',
+    chart: '<path d="M4 19V5"></path><path d="M4 19h16"></path><path d="m7 15 3-3 3 2 4-6"></path>',
+    activity: '<path d="M4 5h16"></path><path d="M4 12h12"></path><path d="M4 19h8"></path>',
+    user: '<circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path>',
+    breadcrumb: '<path d="M4 6h6l4 6-4 6H4l4-6-4-6Z"></path><path d="M14 6h2l4 6-4 6h-2"></path>',
+    plus: '<path d="M12 5v14"></path><path d="M5 12h14"></path>',
+    "file-text": '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"></path><path d="M14 3v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path>',
     "mouse-pointer-click": '<path d="M5 3l7.7 18 2.1-7 6.2-2.8L5 3Z"></path><path d="M4 12H2"></path><path d="m7.4 7.4-1.8-1.8"></path><path d="m13 3 .7-2"></path>'
   };
 

@@ -77,7 +77,11 @@
             { id: "default-workspace-switcher", itemId: "workspace-switcher" }
           ],
           right: [
-            { id: "default-header-action", itemId: "button" },
+            {
+              id: "default-header-action",
+              itemId: "button",
+              settings: { label: "Ayarlar", icon: "settings", href: "#/config", variant: "icon", appearance: "ghost" }
+            },
             { id: "default-user-menu", itemId: "user-menu" }
           ]
         }
@@ -85,10 +89,11 @@
       leftBar: {
         isOpen: true,
         mode: "visible",
-        slots: {
-          top: [
-            { id: "default-primary-nav", itemId: "primary-nav" }
-          ],
+          slots: {
+            top: [
+              { id: "default-left-search", itemId: "global-search" },
+              { id: "default-primary-nav", itemId: "primary-nav" }
+            ],
           middle: [
             { id: "default-tree-menu", itemId: "tree-menu" }
           ],
@@ -129,7 +134,145 @@
     }
   };
 
+  const savedLayoutPresets = [
+    {
+      id: "compact-saas",
+      label: "Compact SaaS",
+      description: "Yoğun header, icon-only sol bar ve kapalı sağ/footer alanları.",
+      state: {
+        version: 5,
+        frameLayout: "center",
+        areas: {
+          header: {
+            isOpen: true,
+            mode: "visible",
+            slots: {
+              left: [
+                { id: "saved-saas-brand", itemId: "brand" },
+                { id: "saved-saas-breadcrumbs", itemId: "breadcrumbs" }
+              ],
+              center: [
+                { id: "saved-saas-workspace", itemId: "workspace-switcher" },
+                { id: "saved-saas-search", itemId: "global-search" }
+              ],
+              right: [
+                {
+                  id: "saved-saas-command",
+                  itemId: "button",
+                  settings: { label: "Komutlar", icon: "K", href: "#/config", variant: "iconText", appearance: "secondary" }
+                },
+                { id: "saved-saas-notifications", itemId: "notifications" },
+                { id: "saved-saas-user", itemId: "user-menu", settings: { label: "Mimar", initials: "BS", variant: "avatar" } }
+              ]
+            }
+          },
+          leftBar: {
+            isOpen: true,
+            mode: "icon",
+            slots: {
+              top: [
+                { id: "saved-saas-nav", itemId: "primary-nav", settings: { variant: "compact" } }
+              ],
+              middle: [
+                { id: "saved-saas-tree", itemId: "tree-menu" }
+              ],
+              bottom: []
+            }
+          },
+          rightBar: {
+            isOpen: false,
+            mode: "hidden",
+            slots: {
+              top: [
+                { id: "saved-saas-inspector", itemId: "inspector-summary" }
+              ],
+              middle: [
+                { id: "saved-saas-counter", itemId: "record-counter" },
+                { id: "saved-saas-metric", itemId: "mini-metric" }
+              ],
+              bottom: [
+                { id: "saved-saas-feed", itemId: "activity-feed" }
+              ]
+            }
+          },
+          footer: {
+            isOpen: false,
+            mode: "hidden",
+            slots: {
+              left: [],
+              center: [],
+              right: []
+            }
+          }
+        }
+      }
+    },
+    {
+      id: "left-compact-shell",
+      label: "Sol compact app shell",
+      description: "Sol kompakt header, sidebar üstünde sayfa seçici, yol bilgisi ve tree menü.",
+      state: {
+        version: 5,
+        frameLayout: "classic",
+        areas: {
+          header: {
+            isOpen: true,
+            mode: "left-rail",
+            slots: {
+              left: [
+                { id: "saved-left-compact-brand", itemId: "brand" }
+              ],
+              center: [],
+              right: [
+                {
+                  id: "saved-left-compact-help",
+                  itemId: "button",
+                  settings: { label: "Yardım", icon: "?", href: "#/config", variant: "icon", appearance: "ghost" }
+                },
+                { id: "saved-left-compact-notifications", itemId: "notifications" },
+                { id: "saved-left-compact-user", itemId: "user-menu", settings: { label: "Hesap", initials: "BS", variant: "avatar" } }
+              ]
+            }
+          },
+          leftBar: {
+            isOpen: true,
+            mode: "visible",
+            slots: {
+              top: [
+                { id: "saved-left-compact-workspace", itemId: "workspace-switcher" },
+                { id: "saved-left-compact-search", itemId: "global-search" },
+                { id: "saved-left-compact-breadcrumbs", itemId: "breadcrumbs" },
+                { id: "saved-left-compact-tree", itemId: "tree-menu" }
+              ],
+              middle: [],
+              bottom: []
+            }
+          },
+          rightBar: {
+            isOpen: false,
+            mode: "hidden",
+            slots: {
+              top: [],
+              middle: [],
+              bottom: []
+            }
+          },
+          footer: {
+            isOpen: false,
+            mode: "hidden",
+            slots: {
+              left: [],
+              center: [],
+              right: []
+            }
+          }
+        }
+      }
+    }
+  ];
+
   let state = clone(defaultState);
+  let activeSavedLayoutId = "default-layout";
   const listeners = new Set();
 
   function clone(value) {
@@ -230,7 +373,50 @@
       });
     });
 
+    placeLeftSearchAfterWorkspace(next);
+    updateDefaultHeaderAction(next);
+
     return next;
+  }
+
+  function updateDefaultHeaderAction(next) {
+    const action = next.areas.header.slots.right.find((item) => item.id === "default-header-action" && item.itemId === "button");
+
+    if (!action) {
+      return;
+    }
+
+    const settings = action.settings || {};
+    const isLegacyDefault = settings.label === "Yeni kayıt"
+      && settings.icon === "+"
+      && settings.variant === "text"
+      && settings.href === "#/config";
+
+    if (!isLegacyDefault) {
+      return;
+    }
+
+    action.settings = { label: "Ayarlar", icon: "settings", href: "#/config", variant: "icon", appearance: "ghost" };
+  }
+
+  function placeLeftSearchAfterWorkspace(next) {
+    const topItems = next.areas.leftBar.slots.top;
+    const workspaceIndex = topItems.findIndex((item) => item.itemId === "workspace-switcher");
+
+    if (workspaceIndex < 0) {
+      return;
+    }
+
+    const existingSearch = topItems.find((item) => item.itemId === "global-search") || {
+      id: "auto-left-workspace-search",
+      itemId: "global-search",
+      settings: ns.Catalog.getDefaultSettings("global-search")
+    };
+    const orderedItems = topItems.filter((item) => item.itemId !== "global-search");
+    const nextWorkspaceIndex = orderedItems.findIndex((item) => item.itemId === "workspace-switcher");
+
+    orderedItems.splice(nextWorkspaceIndex + 1, 0, existingSearch);
+    next.areas.leftBar.slots.top = orderedItems;
   }
 
   function load() {
@@ -259,6 +445,7 @@
 
   function commit(mutator) {
     mutator(state);
+    activeSavedLayoutId = "default-layout";
     save();
     emit();
   }
@@ -272,10 +459,32 @@
     return () => listeners.delete(listener);
   }
 
+  function getActiveSavedLayoutId() {
+    return activeSavedLayoutId;
+  }
+
   function reset() {
     state = clone(defaultState);
+    activeSavedLayoutId = "default-layout";
     save();
     emit();
+  }
+
+  function applyPreset(presetState, layoutId = "default-layout") {
+    state = normalize(presetState);
+    activeSavedLayoutId = layoutId;
+    save();
+    emit();
+  }
+
+  function applySavedLayout(layoutId) {
+    const preset = savedLayoutPresets.find((layout) => layout.id === layoutId);
+
+    if (!preset) {
+      return;
+    }
+
+    applyPreset(preset.state, layoutId);
   }
 
   function toggleArea(areaId) {
@@ -423,10 +632,14 @@
     slotsByArea,
     slotLabels,
     defaultState,
+    savedLayoutPresets,
     load,
     get,
+    getActiveSavedLayoutId,
     subscribe,
     reset,
+    applyPreset,
+    applySavedLayout,
     toggleArea,
     setSideMode,
     setChromeMode,

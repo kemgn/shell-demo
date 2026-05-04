@@ -41,13 +41,36 @@
     return `
       <div class="shell-toolbar-drawer ${toolbarOpen ? "is-open" : ""}">
         <button class="shell-toolbar-trigger" type="button" data-action="toggle-shell-toolbar" aria-expanded="${toolbarOpen ? "true" : "false"}" aria-label="Bar ayarlarını ${toolbarOpen ? "kapat" : "aç"}">
-          ${svgIcon("settings")}
-          <span>Bar ayarları</span>
+          <span class="toolbar-trigger-icon toolbar-trigger-icon-closed">${svgIcon("chevrons-left")}</span>
+          <span class="toolbar-trigger-icon toolbar-trigger-icon-open">${svgIcon("chevrons-right")}</span>
+          <span class="toolbar-trigger-label">Bar ayarları</span>
         </button>
         <div class="shell-toolbar" aria-label="Uygulama kabuğu görünürlük kontrolleri">
+          ${renderSavedLayoutPicker()}
           ${ns.State.areas.map((area) => renderToolbarControl(area, state)).join("")}
         </div>
       </div>
+    `;
+  }
+
+  function renderSavedLayoutPicker() {
+    const layouts = ns.State.savedLayoutPresets || [];
+    const activeLayoutId = ns.State.getActiveSavedLayoutId ? ns.State.getActiveSavedLayoutId() : "default-layout";
+
+    if (!layouts.length) {
+      return "";
+    }
+
+    return `
+      <label class="saved-layout-picker">
+        <span>Kayıtlı layout</span>
+        <select data-saved-layout-select aria-label="Kayıtlı layout düzeni seç">
+          <option value="default-layout" ${activeLayoutId === "default-layout" ? "selected" : ""}>Default Layout</option>
+          ${layouts.map((layout) => `
+            <option value="${escapeHtml(layout.id)}" ${activeLayoutId === layout.id ? "selected" : ""}>${escapeHtml(layout.label)}</option>
+          `).join("")}
+        </select>
+      </label>
     `;
   }
 
@@ -197,7 +220,7 @@
     }
 
     if (axis === "horizontal" && mode === "compact") {
-      return renderCompactItem(item, settings, route, "compact-item");
+      return renderCompactItem(item, settings, route, "compact-item", instance.id);
     }
 
     if (axis !== "vertical") {
@@ -208,7 +231,7 @@
       <div class="rail-item rail-item-${escapeHtml(item.id)}" title="${escapeHtml(item.label)}">
         ${item.id === "primary-nav"
           ? renderPrimaryNavRail(route)
-          : renderCompactItem(item, settings, route, "rail-icon")}
+          : renderCompactItem(item, settings, route, "rail-icon", instance.id)}
         <div class="rail-content">
           ${renderShellItem(instance, areaId, route)}
         </div>
@@ -216,7 +239,7 @@
     `;
   }
 
-  function renderCompactItem(item, settings, route, className) {
+  function renderCompactItem(item, settings, route, className, instanceId) {
     const href = getCompactHref(item.id, route, settings);
 
     if (item.id === "brand") {
@@ -246,27 +269,149 @@
       return `<a class="${className} tree-compact-icon" href="${escapeHtml(href)}" aria-label="${label}" title="${label}">${glyph}</a>`;
     }
 
-    const labelSource = settings.compactLabel
-      || settings.icon
-      || settings.initials
-      || settings.count
-      || settings.title
-      || settings.label
-      || item.label;
-    const label = labelSource
+    if (item.id === "workspace-switcher") {
+      return renderCompactWorkspaceSwitcher(instanceId, settings, className);
+    }
+
+    const spec = getCompactSpec(item, settings, route);
+    const classes = `${className} compact-item-${escapeHtml(item.id)} ${spec.isActive ? "is-active" : ""}`.trim();
+    const content = spec.iconName
+      ? svgIcon(spec.iconName)
+      : `<span class="compact-text">${escapeHtml(spec.text)}</span>`;
+    const badge = spec.badge ? `<span class="compact-badge">${escapeHtml(spec.badge)}</span>` : "";
+
+    const compactHref = Object.prototype.hasOwnProperty.call(spec, "href") ? spec.href : href;
+
+    if (compactHref) {
+      return `<a class="${classes}" href="${escapeHtml(compactHref)}" aria-label="${escapeHtml(spec.label)}" title="${escapeHtml(spec.label)}">${content}${badge}</a>`;
+    }
+
+    return `<button class="${classes}" type="button" aria-label="${escapeHtml(spec.label)}" title="${escapeHtml(spec.label)}">${content}${badge}</button>`;
+  }
+
+  function renderCompactWorkspaceSwitcher(instanceId, settings, className) {
+    const workspaces = parseWorkspaces(settings.workspacesText);
+    const activeWorkspace = workspaces.find((workspace) => workspace.id === settings.activeWorkspaceId)
+      || workspaces[0];
+    const initials = activeWorkspace ? activeWorkspace.initials : "BS";
+    const label = activeWorkspace ? activeWorkspace.label : "Sayfa seçici";
+
+    if (!instanceId) {
+      return `<button class="${className} compact-item-workspace-switcher workspace-compact-icon" type="button" aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}"><span class="compact-text">${escapeHtml(initials)}</span></button>`;
+    }
+
+    return `
+      <details class="${className} compact-item-workspace-switcher workspace-compact-menu">
+        <summary aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+          <span class="compact-text">${escapeHtml(initials)}</span>
+        </summary>
+        <div class="workspace-menu-panel compact-workspace-panel">
+          <label class="workspace-search">
+            ${svgIcon("search")}
+            <input type="search" placeholder="Ara" aria-label="Sayfa ara" data-workspace-search>
+          </label>
+          <div class="workspace-option-list">
+            ${workspaces.map((workspace) => renderWorkspaceOption(instanceId, workspace, activeWorkspace.id)).join("")}
+            <span class="workspace-empty" hidden>Eşleşen sayfa yok</span>
+          </div>
+        </div>
+      </details>
+    `;
+  }
+
+  function getCompactSpec(item, settings, route) {
+    const routeMeta = route.name === "config"
+      ? { label: "Yapılandırma", title: "Uygulama kabuğu yapılandırması" }
+      : ns.Content.getPageMeta(route.page);
+    const activeNav = navLinks.find((link) => isActive(link, route)) || navLinks[0];
+
+    const specs = {
+      "global-search": { iconName: "search", label: "Genel arama", href: "" },
+      "user-menu": { text: settings.initials || "KG", label: settings.label || item.label },
+      breadcrumbs: { iconName: "breadcrumb", label: routeMeta.label, href: route.name === "config" ? "#/config" : `#/app/${route.page || "dashboard"}` },
+      "primary-nav": { text: activeNav.label.slice(0, 2), label: activeNav.label, href: activeNav.href, isActive: true },
+      favorites: { iconName: "star", label: settings.title || item.label, href: getFirstLinkHref(settings.linksText, "#/app/records") },
+      button: getActionButtonCompactSpec(item, settings),
+      "icon-button": getActionButtonCompactSpec(item, settings, "+"),
+      "icon-text-button": getActionButtonCompactSpec(item, settings),
+      "command-button": { iconName: "command", label: settings.label || item.label, href: safeHref(settings.href, "#/config") },
+      "command-palette": { iconName: "command", label: settings.label || item.label, href: safeHref(settings.href, "#/config") },
+      "quick-actions": { iconName: "plus", label: settings.title || item.label, href: "#/app/records" },
+      "ai-assistant": { iconName: "bot", label: settings.title || item.label, href: "#/config" },
+      notifications: { iconName: "bell", label: item.label, badge: settings.count || "0" },
+      "workspace-status": { iconName: "status", label: settings.status || item.label },
+      "environment-chip": { text: compactEnvironment(settings.label), label: settings.label || item.label },
+      "sync-status": { iconName: "sync", label: settings.label || item.label },
+      version: { text: compactVersion(settings.label), label: settings.label || item.label },
+      "record-counter": { text: compactMetric(settings.value), label: settings.label || item.label },
+      "mini-metric": { text: settings.value || compactText(settings.label || item.label), label: settings.label || item.label },
+      "inspector-summary": { iconName: "file-text", label: settings.title || item.label, href: "#/config" },
+      "activity-feed": { iconName: "activity", label: item.label, href: "#/app/workflows" }
+    };
+
+    return {
+      text: compactText(settings.compactLabel || settings.icon || settings.initials || settings.count || settings.title || settings.label || item.label),
+      label: item.label,
+      ...specs[item.id]
+    };
+  }
+
+  function getActionButtonCompactSpec(item, settings, fallbackText) {
+    const iconName = String(settings.icon || "").trim().toLowerCase();
+    const base = {
+      text: settings.icon || fallbackText || compactText(settings.label || item.label),
+      label: settings.label || item.label,
+      href: safeHref(settings.href, "#/config")
+    };
+
+    if (iconName === "settings" || iconName === "gear" || iconName === "cog") {
+      return {
+        ...base,
+        text: "",
+        iconName: "settings"
+      };
+    }
+
+    return base;
+  }
+
+  function compactText(value) {
+    return String(value || "")
       .split(/\s+/)
       .filter(Boolean)
       .slice(0, 2)
       .map((part) => part[0])
       .join("")
-      .toUpperCase();
-    const badge = item.id === "notifications" ? `<span class="compact-badge">${escapeHtml(settings.count || "0")}</span>` : "";
+      .toUpperCase() || "•";
+  }
 
-    if (href) {
-      return `<a class="${className}" href="${escapeHtml(href)}" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(label)}${badge}</a>`;
+  function compactMetric(value) {
+    const text = String(value || "").trim();
+    return text.replace(/,(\d{3})$/, "k").slice(0, 5) || "0";
+  }
+
+  function compactVersion(value) {
+    const text = String(value || "").trim();
+    return text.replace(/^version\s*/i, "").slice(0, 5) || "v";
+  }
+
+  function compactEnvironment(value) {
+    const text = String(value || "").trim().toLocaleLowerCase("tr-TR");
+
+    if (text.includes("sandbox")) {
+      return "SBX";
     }
 
-    return `<button class="${className}" type="button" aria-label="${escapeHtml(item.label)}" title="${escapeHtml(item.label)}">${escapeHtml(label)}${badge}</button>`;
+    if (text.includes("canlı") || text.includes("prod")) {
+      return "PRD";
+    }
+
+    return compactText(value);
+  }
+
+  function getFirstLinkHref(value, fallback) {
+    const [firstLink] = parseLinks(value);
+    return safeHref(firstLink && firstLink.href, fallback);
   }
 
   function renderDivider(axis, settings, mode) {
@@ -338,7 +483,7 @@
     if (variant.id === "icon") {
       return `
         <a class="${classes}" href="${href}" aria-label="${label}" title="${label}">
-          ${icon(rawIcon)}
+          ${renderActionButtonIcon(rawIcon)}
         </a>
       `;
     }
@@ -346,7 +491,7 @@
     if (variant.id === "iconText") {
       return `
         <a class="${classes}" href="${href}">
-          ${icon(rawIcon)}
+          ${renderActionButtonIcon(rawIcon)}
           <span>${label}</span>
         </a>
       `;
@@ -357,6 +502,16 @@
         <span>${label}</span>
       </a>
     `;
+  }
+
+  function renderActionButtonIcon(rawIcon) {
+    const iconName = String(rawIcon || "").trim().toLowerCase();
+
+    if (iconName === "settings" || iconName === "gear" || iconName === "cog") {
+      return svgIcon("settings");
+    }
+
+    return icon(rawIcon);
   }
 
   function normalizeButtonVariant(value) {
@@ -418,7 +573,7 @@
       case "global-search":
         return `
           <label class="shell-item search-box">
-            <span>Arama</span>
+            ${svgIcon("search")}
             <input type="search" placeholder="${escapeHtml(settings.placeholder || "Kayıt, akış, sayfa...")}" aria-label="Genel arama">
           </label>
         `;
@@ -637,7 +792,7 @@
         </summary>
         <div class="workspace-menu-panel">
           <label class="workspace-search">
-            <span aria-hidden="true">⌕</span>
+            ${svgIcon("search")}
             <input type="search" placeholder="Ara" aria-label="Sayfa ara" data-workspace-search>
           </label>
           <div class="workspace-option-list">

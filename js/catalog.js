@@ -2,12 +2,12 @@
   const ns = window.ShellStudio || (window.ShellStudio = {});
 
   const categories = [
-    { id: "identity", label: "Kimlik", note: "Marka, müşteri ve çalışma alanı hissi." },
-    { id: "navigation", label: "Navigasyon", note: "Sayfa linkleri, yol bilgisi ve kısayollar." },
-    { id: "layout", label: "Düzen", note: "Alanları ayıran çizgiler ve görsel nefesler." },
-    { id: "actions", label: "İşlemler", note: "Komutlar, hızlı işlemler ve yardımcılar." },
-    { id: "status", label: "Durum", note: "Sistem, ortam ve işlem durumu." },
-    { id: "insight", label: "İçgörü", note: "Aktivite, sayaç ve bağlamsal özetler." }
+    { id: "identity", label: "Kimlik", note: "Her müşteriye marka, sayfa ve kullanıcı bağlamı kazandırır." },
+    { id: "navigation", label: "Navigasyon", note: "Müşteri portalına ana menü, tree ve favori akışları ekler." },
+    { id: "layout", label: "Düzen", note: "Shell alanlarını ayırır ve uygulama hiyerarşisini netleştirir." },
+    { id: "actions", label: "İşlemler", note: "No-code çıktıya komut, arama ve yardımcı aksiyonları taşır." },
+    { id: "status", label: "Durum", note: "Ortam, yayın ve bildirim durumlarını görünür yapar." },
+    { id: "insight", label: "İçgörü", note: "Yönetici görünümüne sayaç, aktivite ve özet paneller ekler." }
   ];
 
   const items = [
@@ -177,7 +177,7 @@
       title: "Favoriler",
       linksText: "Müşteri panosu|#/app/records\nOnay hattı|#/app/workflows"
     },
-    "global-search": { placeholder: "Kayıt, akış, sayfa..." },
+    "global-search": { placeholder: "Bul..." },
     button: { label: "Yeni kayıt", icon: "+", href: "#/config", variant: "text", appearance: "primary" },
     "icon-button": { label: "Ekle", icon: "+", href: "#/config", variant: "icon", appearance: "primary" },
     "icon-text-button": { label: "Yeni kayıt", icon: "+", href: "#/config", variant: "iconText", appearance: "primary" },
