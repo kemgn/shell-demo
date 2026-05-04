@@ -5,9 +5,7 @@
     { id: "identity", label: "Kimlik", note: "Her müşteriye marka, sayfa ve kullanıcı bağlamı kazandırır." },
     { id: "navigation", label: "Navigasyon", note: "Müşteri portalına ana menü, tree ve favori akışları ekler." },
     { id: "layout", label: "Düzen", note: "Shell alanlarını ayırır ve uygulama hiyerarşisini netleştirir." },
-    { id: "actions", label: "İşlemler", note: "No-code çıktıya komut, arama ve yardımcı aksiyonları taşır." },
-    { id: "status", label: "Durum", note: "Ortam, yayın ve bildirim durumlarını görünür yapar." },
-    { id: "insight", label: "İçgörü", note: "Yönetici görünümüne sayaç, aktivite ve özet paneller ekler." }
+    { id: "actions", label: "İşlemler", note: "No-code çıktıya komut, arama, bildirim ve yardımcı aksiyonları taşır." }
   ];
 
   const items = [
@@ -84,70 +82,10 @@
       description: "Klavye kısayolu ve hızlı komut paleti tetikleyicisi."
     },
     {
-      id: "quick-actions",
-      label: "Hızlı işlemler",
-      category: "actions",
-      description: "Yeni kayıt, dışa aktarma ve akış tetikleme komutları."
-    },
-    {
-      id: "ai-assistant",
-      label: "Yapay zeka yardımcısı",
-      category: "actions",
-      description: "No-code öneri ve yardım çağrısı."
-    },
-    {
       id: "notifications",
       label: "Bildirimler",
-      category: "status",
+      category: "actions",
       description: "Uyarılar, görevler ve onay bekleyen işler."
-    },
-    {
-      id: "workspace-status",
-      label: "Çalışma alanı durumu",
-      category: "status",
-      description: "Yayın durumu ve son deployment bilgisi."
-    },
-    {
-      id: "environment-chip",
-      label: "Ortam etiketi",
-      category: "status",
-      description: "Sandbox, test veya canlı ortam etiketi."
-    },
-    {
-      id: "sync-status",
-      label: "Senkron durumu",
-      category: "status",
-      description: "Kayıt, yapılandırma ve şema senkronizasyon durumu."
-    },
-    {
-      id: "version",
-      label: "Sürüm",
-      category: "status",
-      description: "Demo sürümü ve çıktı bilgisi."
-    },
-    {
-      id: "record-counter",
-      label: "Kayıt sayacı",
-      category: "insight",
-      description: "Canlı kayıt sayısı ve değişim bilgisi."
-    },
-    {
-      id: "mini-metric",
-      label: "Mini metric",
-      category: "insight",
-      description: "Tek satırda küçük KPI veya trend göstergesi."
-    },
-    {
-      id: "inspector-summary",
-      label: "İnceleyici özeti",
-      category: "insight",
-      description: "Seçili ekranın bileşen ve kural özeti."
-    },
-    {
-      id: "activity-feed",
-      label: "Aktivite akışı",
-      category: "insight",
-      description: "Son kullanıcı ve mimar aktiviteleri."
     }
   ];
 
@@ -157,7 +95,7 @@
   }, {});
 
   const defaultSettings = {
-    brand: { label: "Optimate Solutions", compactLabel: "O" },
+    brand: { label: "Optimate Solutions", compactLabel: "O", compact: false },
     "workspace-switcher": {
       eyebrow: "",
       activeWorkspaceId: "benim-sayfam",
@@ -175,33 +113,21 @@
     favorites: {
       variant: "collapse",
       title: "Favoriler",
-      linksText: "Müşteri panosu|#/app/records\nOnay hattı|#/app/workflows"
+      linksText: "Müşteri panosu|#\nOnay hattı|#"
     },
     "global-search": { placeholder: "Bul..." },
-    button: { label: "Yeni kayıt", icon: "+", href: "#/config", variant: "text", appearance: "primary" },
-    "icon-button": { label: "Ekle", icon: "+", href: "#/config", variant: "icon", appearance: "primary" },
-    "icon-text-button": { label: "Yeni kayıt", icon: "+", href: "#/config", variant: "iconText", appearance: "primary" },
+    button: { label: "Kaydet", icon: "", href: "#/config", variant: "text", style: "text", appearance: "ghost" },
+    "icon-button": { label: "Yardım", icon: "?", href: "#/config", variant: "icon", style: "outlined", appearance: "secondary" },
+    "icon-text-button": { label: "Yeni kayıt", icon: "+", href: "#/config", variant: "iconText", style: "filled", appearance: "primary" },
     "command-button": { label: "Yapılandır", href: "#/config" },
     "command-palette": { label: "Komut paleti", shortcut: "Ctrl K", icon: "⌘", href: "#/config", variant: "inline" },
-    "quick-actions": {
-      title: "Hızlı işlemler",
-      actionsText: "Yeni kayıt\nGörünümü dışa aktar\nAkışı çalıştır"
-    },
-    "ai-assistant": { title: "Yapay zeka yardımcısı", subtitle: "Kabuk öğeleri öner" },
     notifications: { count: "7" },
-    "workspace-status": { title: "Çalışma alanı", status: "Yayında", note: "Son yayın 14:32" },
-    "environment-chip": { label: "Sandbox çıktısı" },
-    "sync-status": { label: "Ayarlar yerelde kayıtlı" },
-    version: { label: "v0.1 prototip" },
-    "record-counter": { label: "Kayıtlar", value: "18,432", delta: "+12.4%" },
-    "mini-metric": { label: "Aktif akış", value: "42", note: "6 bekleyen", trend: "+8%", variant: "inline" },
-    "inspector-summary": { title: "İnceleyici", note: "4 bölge, 12 görünür blok" },
-    "activity-feed": { entriesText: "Elif tablo kurallarını değiştirdi.\nKerem v12 sürümünü yayınladı." },
     divider: { orientation: "auto" }
   };
 
   const settingSchemas = {
     brand: [
+      { key: "compact", label: "Compact", type: "boolean" },
       { key: "label", label: "Logo alt", type: "text" },
       { key: "compactLabel", label: "Kompakt metin", type: "text" }
     ],
@@ -239,7 +165,8 @@
     ],
     button: [
       { key: "variant", label: "Varyasyon", type: "select", options: ["text", "icon", "iconText"] },
-      { key: "appearance", label: "Görünüm", type: "select", options: ["primary", "secondary", "danger", "ghost"] },
+      { key: "style", label: "Stil", type: "select", options: ["filled", "outlined", "text"] },
+      { key: "appearance", label: "Ton", type: "select", options: ["primary", "secondary", "danger", "ghost"] },
       { key: "label", label: "Buton etiketi", type: "text" },
       { key: "icon", label: "İkon", type: "text", hint: "Tek karakter veya kısa metin." },
       { key: "href", label: "Bağlantı", type: "text" }
@@ -265,49 +192,8 @@
       { key: "icon", label: "İkon", type: "text" },
       { key: "href", label: "Bağlantı", type: "text" }
     ],
-    "quick-actions": [
-      { key: "title", label: "Başlık", type: "text" },
-      { key: "actionsText", label: "İşlemler", type: "textarea", hint: "Her satıra bir işlem" }
-    ],
-    "ai-assistant": [
-      { key: "title", label: "Başlık", type: "text" },
-      { key: "subtitle", label: "Alt başlık", type: "text" }
-    ],
     notifications: [
       { key: "count", label: "Sayı", type: "text" }
-    ],
-    "workspace-status": [
-      { key: "title", label: "Başlık", type: "text" },
-      { key: "status", label: "Durum", type: "text" },
-      { key: "note", label: "Not", type: "text" }
-    ],
-    "environment-chip": [
-      { key: "label", label: "Etiket", type: "text" }
-    ],
-    "sync-status": [
-      { key: "label", label: "Etiket", type: "text" }
-    ],
-    version: [
-      { key: "label", label: "Sürüm etiketi", type: "text" }
-    ],
-    "record-counter": [
-      { key: "label", label: "Etiket", type: "text" },
-      { key: "value", label: "Değer", type: "text" },
-      { key: "delta", label: "Değişim", type: "text" }
-    ],
-    "mini-metric": [
-      { key: "variant", label: "Görünüm", type: "select", options: ["inline", "stacked"] },
-      { key: "label", label: "Etiket", type: "text" },
-      { key: "value", label: "Değer", type: "text" },
-      { key: "note", label: "Not", type: "text" },
-      { key: "trend", label: "Trend", type: "text" }
-    ],
-    "inspector-summary": [
-      { key: "title", label: "Başlık", type: "text" },
-      { key: "note", label: "Not", type: "text" }
-    ],
-    "activity-feed": [
-      { key: "entriesText", label: "Kayıtlar", type: "textarea", hint: "Her satıra bir kayıt" }
     ]
   };
 

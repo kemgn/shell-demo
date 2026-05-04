@@ -8,10 +8,11 @@
   function render() {
     const state = ns.State.get();
     const activeArea = getActiveArea();
+    const sidePanel = renderSidePanel(state);
 
     return `
       <div class="config-page page-enter">
-        <section class="config-layout">
+        <section class="config-layout ${sidePanel ? "has-element-editor" : "is-single-column"}">
           <div class="config-editor-panel">
             <div class="config-shell-controls">
               <nav class="config-tabs" aria-label="Uygulama kabuğu bölgeleri">
@@ -23,7 +24,7 @@
               ${renderAreaEditor(activeArea, state)}
             </div>
           </div>
-          ${renderSidePanel(state)}
+          ${sidePanel}
         </section>
       </div>
     `;
@@ -113,7 +114,7 @@
           ${renderSlotAddRow(area, slot)}
           <div class="slot-items-scroll">
             ${items.length ? items.map((instance, index) => renderConfigItem(area.id, slot, instance, index, items.length)).join("") : `
-              <div class="empty-config-slot">Bu slot boş. Katalogdan bir öğe ekle.</div>
+              <div class="empty-config-slot">Bu slot boş. Açılır listeden bir öğe ekle.</div>
             `}
           </div>
         </div>
@@ -202,27 +203,7 @@
       return renderElementEditor(selected);
     }
 
-    const renderedCategories = ns.Catalog.categories
-      .map((category) => renderCatalogCategory(category))
-      .filter(Boolean)
-      .join("");
-
-    return `
-      <aside class="catalog-panel">
-        <div class="catalog-panel-head">
-          <div>
-            <span>Kullanılabilir öğeler</span>
-            <strong>${getCatalogResultCount()} blok</strong>
-          </div>
-          <button class="mini-danger-button" type="button" data-action="reset-config">Sıfırla</button>
-        </div>
-        <label class="catalog-search">
-          ${svgIcon("eye")}
-          <input type="search" value="${escapeHtml(catalogSearchQuery)}" placeholder="Katalogda ara" aria-label="Katalogda ara" data-catalog-search>
-        </label>
-        ${renderedCategories || `<div class="catalog-empty">Bu aramada gösterilecek blok yok.</div>`}
-      </aside>
-    `;
+    return "";
   }
 
   function renderElementEditor(selected) {
@@ -250,7 +231,7 @@
             <strong>${escapeHtml(item.label)}</strong>
             <small>${escapeHtml(selected.area.label)} / ${escapeHtml(ns.State.slotLabels[selected.slot])}</small>
           </div>
-          <button class="ghost-button" type="button" data-action="clear-item-edit">Katalog</button>
+          <button class="ghost-button" type="button" data-action="clear-item-edit">Kapat</button>
         </div>
         <div class="element-editor-body" data-item-editor data-id="${selected.instance.id}">
           ${renderSettingSections(schema, settings)}
@@ -269,7 +250,7 @@
             <strong>${escapeHtml(item.label)}</strong>
             <small>${escapeHtml(selected.area.label)} / ${escapeHtml(ns.State.slotLabels[selected.slot])}</small>
           </div>
-          <button class="ghost-button" type="button" data-action="clear-item-edit">Katalog</button>
+          <button class="ghost-button" type="button" data-action="clear-item-edit">Kapat</button>
         </div>
 
         <section class="button-preview-section">
@@ -281,8 +262,17 @@
           </div>
         </section>
 
+        <section class="button-preview-section">
+          <span class="setting-section-title">Stil</span>
+          <div class="button-preview-grid">
+            ${renderButtonStylePreview(selected.instance.id, settings, "filled", "Filled")}
+            ${renderButtonStylePreview(selected.instance.id, settings, "outlined", "Outlined")}
+            ${renderButtonStylePreview(selected.instance.id, settings, "text", "Text")}
+          </div>
+        </section>
+
         <div class="element-editor-body" data-item-editor data-id="${selected.instance.id}">
-          ${renderSettingSections(schema.filter((field) => field.key !== "variant"), settings)}
+          ${renderSettingSections(schema.filter((field) => field.key !== "variant" && field.key !== "style"), settings)}
           <button class="save-settings-button" type="button" data-action="save-item-settings" data-id="${selected.instance.id}">Button ayarlarını uygula</button>
         </div>
       </aside>
@@ -291,18 +281,49 @@
 
   function renderButtonVariantPreview(instanceId, settings, variant, title) {
     const isActive = (settings.variant || "text") === variant;
-    const label = settings.label || "Yeni kayıt";
-    const glyph = settings.icon || "+";
+    const preset = getButtonVariantPreset(variant);
+    const label = preset.label;
+    const glyph = preset.icon;
+    const style = normalizeButtonPreviewStyle(preset.style);
+    const patch = escapeHtml(JSON.stringify(preset));
 
     return `
-      <button class="button-preview-card ${isActive ? "is-active" : ""}" type="button" data-action="set-item-setting" data-id="${instanceId}" data-key="variant" data-value="${variant}">
-        <span class="button-preview-surface button-preview-${variant}">
+      <button class="button-preview-card ${isActive ? "is-active" : ""}" type="button" data-action="set-item-setting" data-id="${instanceId}" data-key="variant" data-value="${variant}" data-setting-patch="${patch}">
+        <span class="button-preview-surface button-preview-${variant} button-preview-style-${style}">
           ${variant !== "text" ? `<i>${escapeHtml(glyph)}</i>` : ""}
           ${variant !== "icon" ? `<strong>${escapeHtml(label)}</strong>` : ""}
         </span>
         <small>${escapeHtml(title)}</small>
       </button>
     `;
+  }
+
+  function getButtonVariantPreset(variant) {
+    const presets = {
+      text: { variant: "text", label: "Kaydet", icon: "", href: "#/config", style: "text", appearance: "ghost" },
+      icon: { variant: "icon", label: "Yardım", icon: "?", href: "#/config", style: "outlined", appearance: "secondary" },
+      iconText: { variant: "iconText", label: "Yeni kayıt", icon: "+", href: "#/config", style: "filled", appearance: "primary" }
+    };
+
+    return presets[variant] || presets.text;
+  }
+
+  function renderButtonStylePreview(instanceId, settings, style, title) {
+    const isActive = normalizeButtonPreviewStyle(settings.style) === style;
+    const label = settings.label || "Yeni kayıt";
+
+    return `
+      <button class="button-preview-card ${isActive ? "is-active" : ""}" type="button" data-action="set-item-setting" data-id="${instanceId}" data-key="style" data-value="${style}">
+        <span class="button-preview-surface button-preview-style-${style}">
+          <strong>${escapeHtml(label)}</strong>
+        </span>
+        <small>${escapeHtml(title)}</small>
+      </button>
+    `;
+  }
+
+  function normalizeButtonPreviewStyle(value) {
+    return ["filled", "outlined", "text"].includes(value) ? value : "filled";
   }
 
   function renderFavoritesEditor(selected, item, settings) {
@@ -314,7 +335,7 @@
             <strong>Favoriler böyle gözüksün</strong>
             <small>${escapeHtml(selected.area.label)} / ${escapeHtml(ns.State.slotLabels[selected.slot])}</small>
           </div>
-          <button class="ghost-button" type="button" data-action="clear-item-edit">Katalog</button>
+          <button class="ghost-button" type="button" data-action="clear-item-edit">Kapat</button>
         </div>
 
         <section class="appearance-section">
@@ -349,7 +370,7 @@
             <strong>${escapeHtml(item.label)}</strong>
             <small>${escapeHtml(selected.area.label)} / ${escapeHtml(ns.State.slotLabels[selected.slot])}</small>
           </div>
-          <button class="ghost-button" type="button" data-action="clear-item-edit">Katalog</button>
+          <button class="ghost-button" type="button" data-action="clear-item-edit">Kapat</button>
         </div>
 
         <section class="appearance-section">
@@ -470,6 +491,18 @@
   function renderSettingField(field, value) {
     const hint = field.hint ? `<small>${escapeHtml(field.hint)}</small>` : "";
 
+    if (field.type === "boolean") {
+      const isChecked = value === true || value === "true";
+
+      return `
+        <label class="setting-field setting-field-boolean">
+          <input type="checkbox" ${isChecked ? "checked" : ""} data-setting-key="${escapeHtml(field.key)}">
+          <span>${escapeHtml(field.label)}</span>
+          ${hint}
+        </label>
+      `;
+    }
+
     if (field.type === "select") {
       return `
         <label class="setting-field">
@@ -504,7 +537,7 @@
   }
 
   function renderSettingSections(schema, settings) {
-    const visualKeys = new Set(["variant", "appearance", "orientation"]);
+    const visualKeys = new Set(["variant", "style", "appearance", "orientation", "compact"]);
     const visualFields = schema.filter((field) => visualKeys.has(field.key));
     const dataFields = schema.filter((field) => !visualKeys.has(field.key));
 
@@ -522,7 +555,7 @@
     return `
       <section class="setting-group">
         <span class="setting-section-title">${escapeHtml(title)}</span>
-        ${fields.map((field) => renderSettingField(field, settings[field.key] || "")).join("")}
+        ${fields.map((field) => renderSettingField(field, settings[field.key] ?? "")).join("")}
       </section>
     `;
   }
@@ -576,7 +609,7 @@
 
   function renderCatalogSpec(item) {
     const schema = ns.Catalog.getSettingSchema(item.id);
-    const visualKeys = new Set(["variant", "appearance", "orientation"]);
+    const visualKeys = new Set(["variant", "style", "appearance", "orientation"]);
     const visualFields = schema.filter((field) => visualKeys.has(field.key));
     const dataFields = schema.filter((field) => !visualKeys.has(field.key));
     const visualLabel = visualFields.length

@@ -41,6 +41,12 @@
     user: '<circle cx="12" cy="8" r="4"></circle><path d="M4 21a8 8 0 0 1 16 0"></path>',
     breadcrumb: '<path d="M4 6h6l4 6-4 6H4l4-6-4-6Z"></path><path d="M14 6h2l4 6-4 6h-2"></path>',
     plus: '<path d="M12 5v14"></path><path d="M5 12h14"></path>',
+    table: '<rect x="3" y="5" width="18" height="14" rx="2"></rect><path d="M3 10h18"></path><path d="M9 5v14"></path><path d="M15 5v14"></path>',
+    filter: '<path d="M4 6h16"></path><path d="M7 12h10"></path><path d="M10 18h4"></path>',
+    download: '<path d="M12 3v12"></path><path d="m7 10 5 5 5-5"></path><path d="M5 21h14"></path>',
+    upload: '<path d="M12 21V9"></path><path d="m7 14 5-5 5 5"></path><path d="M5 3h14"></path>',
+    columns: '<rect x="4" y="5" width="16" height="14" rx="2"></rect><path d="M10 5v14"></path><path d="M15 5v14"></path>',
+    info: '<circle cx="12" cy="12" r="9"></circle><path d="M12 10v6"></path><path d="M12 7h.01"></path>',
     "file-text": '<path d="M14 3H6a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2V9Z"></path><path d="M14 3v6h6"></path><path d="M8 13h8"></path><path d="M8 17h5"></path>',
     "mouse-pointer-click": '<path d="M5 3l7.7 18 2.1-7 6.2-2.8L5 3Z"></path><path d="M4 12H2"></path><path d="m7.4 7.4-1.8-1.8"></path><path d="m13 3 .7-2"></path>'
   };

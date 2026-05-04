@@ -45,6 +45,18 @@
 
   const sideAreaIds = new Set(["leftBar", "rightBar"]);
   const chromeAreaIds = new Set(["header", "footer"]);
+  const removedItemIds = new Set([
+    "workspace-status",
+    "environment-chip",
+    "sync-status",
+    "version",
+    "record-counter",
+    "mini-metric",
+    "inspector-summary",
+    "activity-feed",
+    "ai-assistant",
+    "quick-actions"
+  ]);
 
   const slotsByArea = {
     header: ["left", "center", "right"],
@@ -104,31 +116,18 @@
         isOpen: false,
         mode: "hidden",
         slots: {
-          top: [
-            { id: "default-inspector-summary", itemId: "inspector-summary" }
-          ],
-          middle: [
-            { id: "default-quick-actions", itemId: "quick-actions" },
-            { id: "default-record-counter", itemId: "record-counter" }
-          ],
-          bottom: [
-            { id: "default-activity-feed", itemId: "activity-feed" }
-          ]
+          top: [],
+          middle: [],
+          bottom: []
         }
       },
       footer: {
         isOpen: false,
         mode: "hidden",
         slots: {
-          left: [
-            { id: "default-environment-chip", itemId: "environment-chip" }
-          ],
-          center: [
-            { id: "default-sync-status", itemId: "sync-status" }
-          ],
-          right: [
-            { id: "default-version", itemId: "version" }
-          ]
+          left: [],
+          center: [],
+          right: []
         }
       }
     }
@@ -183,16 +182,9 @@
             isOpen: false,
             mode: "hidden",
             slots: {
-              top: [
-                { id: "saved-saas-inspector", itemId: "inspector-summary" }
-              ],
-              middle: [
-                { id: "saved-saas-counter", itemId: "record-counter" },
-                { id: "saved-saas-metric", itemId: "mini-metric" }
-              ],
-              bottom: [
-                { id: "saved-saas-feed", itemId: "activity-feed" }
-              ]
+              top: [],
+              middle: [],
+              bottom: []
             }
           },
           footer: {
@@ -241,7 +233,6 @@
               top: [
                 { id: "saved-left-compact-workspace", itemId: "workspace-switcher" },
                 { id: "saved-left-compact-search", itemId: "global-search" },
-                { id: "saved-left-compact-breadcrumbs", itemId: "breadcrumbs" },
                 { id: "saved-left-compact-tree", itemId: "tree-menu" }
               ],
               middle: [],
@@ -315,12 +306,20 @@
   }
 
   function isItemAllowedInArea(areaId, itemId) {
+    if (removedItemIds.has(itemId)) {
+      return false;
+    }
+
     if (itemId === "tenant-chip" || itemId === "tab-menu") {
       return false;
     }
 
     if (itemId === "tree-menu") {
       return sideAreaIds.has(areaId);
+    }
+
+    if (itemId === "breadcrumbs") {
+      return !sideAreaIds.has(areaId);
     }
 
     return true;

@@ -68,7 +68,7 @@
         const settings = {};
 
         fields.forEach((field) => {
-          settings[field.dataset.settingKey] = field.value;
+          settings[field.dataset.settingKey] = field.type === "checkbox" ? field.checked : field.value;
         });
 
         ns.State.updateItemSettings(control.dataset.id, settings);
@@ -76,9 +76,7 @@
       }
 
       if (action === "set-item-setting") {
-        ns.State.updateItemSettings(control.dataset.id, {
-          [control.dataset.key]: control.dataset.value
-        });
+        ns.State.updateItemSettings(control.dataset.id, getSettingPatch(control));
         return;
       }
 
@@ -157,6 +155,20 @@
 
       filterWorkspaceOptions(search);
     });
+  }
+
+  function getSettingPatch(control) {
+    if (control.dataset.settingPatch) {
+      try {
+        return JSON.parse(control.dataset.settingPatch);
+      } catch (error) {
+        return {};
+      }
+    }
+
+    return {
+      [control.dataset.key]: control.dataset.value
+    };
   }
 
   function filterWorkspaceOptions(search) {

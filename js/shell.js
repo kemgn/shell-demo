@@ -62,15 +62,24 @@
     }
 
     return `
-      <label class="saved-layout-picker">
+      <div class="saved-layout-picker">
         <span>Kayıtlı layout</span>
-        <select data-saved-layout-select aria-label="Kayıtlı layout düzeni seç">
-          <option value="default-layout" ${activeLayoutId === "default-layout" ? "selected" : ""}>Default Layout</option>
-          ${layouts.map((layout) => `
-            <option value="${escapeHtml(layout.id)}" ${activeLayoutId === layout.id ? "selected" : ""}>${escapeHtml(layout.label)}</option>
-          `).join("")}
-        </select>
-      </label>
+        <div class="saved-layout-control">
+          <select data-saved-layout-select aria-label="Kayıtlı layout düzeni seç">
+            <option value="default-layout" ${activeLayoutId === "default-layout" ? "selected" : ""}>Default Layout</option>
+            ${layouts.map((layout) => `
+              <option value="${escapeHtml(layout.id)}" ${activeLayoutId === layout.id ? "selected" : ""}>${escapeHtml(layout.label)}</option>
+            `).join("")}
+          </select>
+          <a class="saved-layout-config-link" href="#/config" aria-label="Layout ayar ekranına git" title="Layout ayar ekranı">
+            ${svgIcon("settings")}
+          </a>
+          <button class="saved-layout-reset-button" type="button" data-action="reset-config" aria-label="Layout ayarlarını sıfırla" title="Sıfırla">
+            ${svgIcon("trash")}
+            <span>Sıfırla</span>
+          </button>
+        </div>
+      </div>
     `;
   }
 
@@ -219,6 +228,10 @@
       return renderDivider(axis, settings, mode);
     }
 
+    if ((axis === "horizontal" && mode === "compact" && item.id === "breadcrumbs") || (axis === "vertical" && item.id === "breadcrumbs")) {
+      return "";
+    }
+
     if (axis === "horizontal" && mode === "compact") {
       return renderCompactItem(item, settings, route, "compact-item", instance.id);
     }
@@ -255,28 +268,35 @@
 
     if (item.id === "tree-menu") {
       const entries = parseTreeItems(settings.itemsText);
-      const activeEntry = entries.find((entry) => isHrefActive(entry.href, route)) || entries[0];
-      const href = safeHref(activeEntry && activeEntry.href, "#/app/dashboard");
+      const activeEntry = getActiveTreeEntry(entries, route) || entries[0];
       const label = escapeHtml(settings.title || item.label);
-      const glyph = `
-        <span class="tree-rail-glyph" aria-hidden="true">
-          <span></span>
-          <span></span>
-          <span></span>
-        </span>
-      `;
+      const roots = getTreeRootEntries(entries, activeEntry);
 
-      return `<a class="${className} tree-compact-icon" href="${escapeHtml(href)}" aria-label="${label}" title="${label}">${glyph}</a>`;
+      return `
+        <nav class="${className} tree-root-rail" aria-label="${label}" title="${label}">
+          ${roots.map(({ entry, isActive }) => `
+            <a class="${isActive ? "is-active" : ""}" href="${escapeHtml(safeHref(entry.href, "#/app/dashboard"))}" aria-label="${escapeHtml(entry.label)}" title="${escapeHtml(entry.label)}">
+              ${icon(entry.icon)}
+            </a>
+          `).join("")}
+        </nav>
+      `;
     }
 
     if (item.id === "workspace-switcher") {
       return renderCompactWorkspaceSwitcher(instanceId, settings, className);
     }
 
+    if (item.id === "user-menu") {
+      return renderCompactUserMenu(settings, className);
+    }
+
     const spec = getCompactSpec(item, settings, route);
     const classes = `${className} compact-item-${escapeHtml(item.id)} ${spec.isActive ? "is-active" : ""}`.trim();
     const content = spec.iconName
       ? svgIcon(spec.iconName)
+      : spec.markText
+        ? icon(spec.markText)
       : `<span class="compact-text">${escapeHtml(spec.text)}</span>`;
     const badge = spec.badge ? `<span class="compact-badge">${escapeHtml(spec.badge)}</span>` : "";
 
@@ -319,6 +339,20 @@
     `;
   }
 
+  function renderCompactUserMenu(settings, className) {
+    const label = settings.label || "Mimar";
+    const initials = settings.initials || "KG";
+
+    return `
+      <details class="${className} compact-item-user-menu account-compact-menu">
+        <summary aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+          <span class="compact-text">${escapeHtml(initials)}</span>
+        </summary>
+        ${renderAccountPanel(settings, "compact-account-panel")}
+      </details>
+    `;
+  }
+
   function getCompactSpec(item, settings, route) {
     const routeMeta = route.name === "config"
       ? { label: "Yapılandırma", title: "Uygulama kabuğu yapılandırması" }
@@ -336,8 +370,6 @@
       "icon-text-button": getActionButtonCompactSpec(item, settings),
       "command-button": { iconName: "command", label: settings.label || item.label, href: safeHref(settings.href, "#/config") },
       "command-palette": { iconName: "command", label: settings.label || item.label, href: safeHref(settings.href, "#/config") },
-      "quick-actions": { iconName: "plus", label: settings.title || item.label, href: "#/app/records" },
-      "ai-assistant": { iconName: "bot", label: settings.title || item.label, href: "#/config" },
       notifications: { iconName: "bell", label: item.label, badge: settings.count || "0" },
       "workspace-status": { iconName: "status", label: settings.status || item.label },
       "environment-chip": { text: compactEnvironment(settings.label), label: settings.label || item.label },
@@ -359,7 +391,6 @@
   function getActionButtonCompactSpec(item, settings, fallbackText) {
     const iconName = String(settings.icon || "").trim().toLowerCase();
     const base = {
-      text: settings.icon || fallbackText || compactText(settings.label || item.label),
       label: settings.label || item.label,
       href: safeHref(settings.href, "#/config")
     };
@@ -372,7 +403,26 @@
       };
     }
 
-    return base;
+    if (iconName === "+" || iconName === "plus" || iconName === "add") {
+      return {
+        ...base,
+        text: "",
+        iconName: "plus"
+      };
+    }
+
+    if (iconName === "?" || iconName === "help" || iconName === "info") {
+      return {
+        ...base,
+        text: "",
+        iconName: "info"
+      };
+    }
+
+    return {
+      ...base,
+      markText: settings.icon || fallbackText || compactText(settings.label || item.label)
+    };
   }
 
   function compactText(value) {
@@ -443,8 +493,6 @@
       "icon-text-button": "#/config",
       "command-button": "#/config",
       "command-palette": "#/config",
-      "quick-actions": "#/app/records",
-      "ai-assistant": "#/config",
       "mini-metric": "#/app/workflows",
       "inspector-summary": "#/config",
       "activity-feed": "#/app/workflows"
@@ -478,7 +526,8 @@
     const rawIcon = settings.icon || labelText.slice(0, 2);
     const variant = normalizeButtonVariant(presetVariant || settings.variant || "text");
     const appearance = normalizeButtonAppearance(settings.appearance || "primary");
-    const classes = `shell-item shell-button shell-button-${variant.className} shell-button-${appearance}`;
+    const style = normalizeButtonStyle(settings.style || "filled");
+    const classes = `shell-item shell-button shell-button-${variant.className} shell-button-${appearance} shell-button-style-${style}`;
 
     if (variant.id === "icon") {
       return `
@@ -530,6 +579,10 @@
     return ["primary", "secondary", "danger", "ghost"].includes(value) ? value : "primary";
   }
 
+  function normalizeButtonStyle(value) {
+    return ["filled", "outlined", "text"].includes(value) ? value : "filled";
+  }
+
   function renderShellItem(instance, areaId, route) {
     const item = ns.Catalog.getItem(instance.itemId);
     const settings = ns.Catalog.mergeSettings(instance.itemId, instance.settings);
@@ -539,6 +592,14 @@
 
     switch (item.id) {
       case "brand":
+        if (settings.compact === true || settings.compact === "true") {
+          return `
+            <a class="shell-item brand-item brand-item-logo brand-item-logo-compact" href="#/app/dashboard" aria-label="Optimate Solutions ana sayfa">
+              <img src="assets/optimate-hexagon.svg" alt="${escapeHtml(settings.label || "Optimate Solutions")}">
+            </a>
+          `;
+        }
+
         return `
           <a class="shell-item brand-item brand-item-logo" href="#/app/dashboard" aria-label="Optimate Solutions ana sayfa">
             <img src="assets/logo-light.png" alt="${escapeHtml(settings.label || "Optimate Solutions")}">
@@ -592,25 +653,15 @@
         `;
       case "command-palette":
         return renderCommandPalette(settings);
-      case "quick-actions":
-        return `
-          <div class="shell-item quick-actions">
-            <span class="mini-title">${escapeHtml(settings.title || "Hızlı işlemler")}</span>
-            ${parseLines(settings.actionsText).map((action) => `<button type="button">${escapeHtml(action)}</button>`).join("")}
-          </div>
-        `;
-      case "ai-assistant":
-        return `
-          <a class="shell-item ai-card" href="#/config">
-            <strong>${escapeHtml(settings.title || "Yapay zeka yardımcısı")}</strong>
-            <span>${escapeHtml(settings.subtitle || "Kabuk öğeleri öner")}</span>
-          </a>
-        `;
       case "notifications":
         return `
           <button class="shell-item notification-button" type="button">
-            ${icon("N")}
-            <span>${escapeHtml(settings.count || "0")}</span>
+            <span class="notification-icon">${svgIcon("bell")}</span>
+            <span class="notification-copy">
+              <strong>Bildirimler</strong>
+              <small>Onay ve görev uyarıları</small>
+            </span>
+            <span class="notification-count">${escapeHtml(settings.count || "0")}</span>
           </button>
         `;
       case "workspace-status":
@@ -668,10 +719,34 @@
     const isAvatarOnly = settings.variant === "avatar";
 
     return `
-      <button class="shell-item user-menu ${isAvatarOnly ? "user-menu-avatar" : ""}" type="button" aria-label="${escapeHtml(label)}">
-        <span class="avatar">${escapeHtml(initials)}</span>
-        ${isAvatarOnly ? "" : `<span>${escapeHtml(label)}</span>`}
-      </button>
+      <details class="shell-item user-menu user-menu-popover ${isAvatarOnly ? "user-menu-avatar" : ""}">
+        <summary aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
+          <span class="avatar">${escapeHtml(initials)}</span>
+          ${isAvatarOnly ? "" : `<span>${escapeHtml(label)}</span>`}
+        </summary>
+        ${renderAccountPanel(settings)}
+      </details>
+    `;
+  }
+
+  function renderAccountPanel(settings, extraClass = "") {
+    const label = settings.label || "Mimar";
+    const initials = settings.initials || "KG";
+
+    return `
+      <div class="account-menu-panel ${extraClass}">
+        <div class="account-menu-head">
+          <span class="avatar">${escapeHtml(initials)}</span>
+          <div>
+            <strong>${escapeHtml(label)}</strong>
+            <small>Platform mimarı</small>
+          </div>
+        </div>
+        <a href="#/config">${svgIcon("user")} Profil</a>
+        <a href="#/config">${svgIcon("settings")} Hesap ayarları</a>
+        <a href="#/config">${svgIcon("info")} Yardım ve destek</a>
+        <button type="button">${svgIcon("chevrons-right")} Oturumu kapat</button>
+      </div>
     `;
   }
 
@@ -691,13 +766,14 @@
     const title = settings.title || "Tree menü";
     const variant = settings.variant === "compact" ? "compact" : "nested";
     const entries = parseTreeItems(settings.itemsText);
+    const activeEntry = getActiveTreeEntry(entries, route);
 
     return `
       <nav class="shell-item tree-menu tree-menu-${variant}" aria-label="${escapeHtml(title)}">
         <span class="mini-title">${escapeHtml(title)}</span>
         <div class="tree-menu-list">
           ${entries.map((entry) => `
-            <a class="${isHrefActive(entry.href, route) ? "is-active" : ""}" href="${escapeHtml(entry.href)}" style="--tree-level: ${entry.level}">
+            <a class="${entry === activeEntry ? "is-active" : ""}" href="${escapeHtml(entry.href)}" style="--tree-level: ${entry.level}">
               ${icon(entry.icon)}
               <span>${escapeHtml(entry.label)}</span>
             </a>
@@ -705,6 +781,38 @@
         </div>
       </nav>
     `;
+  }
+
+  function getActiveTreeEntry(entries, route) {
+    return entries.reduce((activeEntry, entry) => {
+      if (!isHrefActive(entry.href, route)) {
+        return activeEntry;
+      }
+
+      if (!activeEntry || entry.level >= activeEntry.level) {
+        return entry;
+      }
+
+      return activeEntry;
+    }, null);
+  }
+
+  function getTreeRootEntries(entries, activeEntry) {
+    const roots = [];
+    let currentRoot = null;
+
+    entries.forEach((entry) => {
+      if (entry.level === 0 || !currentRoot) {
+        currentRoot = { entry, isActive: false };
+        roots.push(currentRoot);
+      }
+
+      if (entry === activeEntry && currentRoot) {
+        currentRoot.isActive = true;
+      }
+    });
+
+    return roots.length ? roots : [{ entry: activeEntry || entries[0], isActive: true }].filter((root) => root.entry);
   }
 
   function renderCommandPalette(settings) {
@@ -761,15 +869,26 @@
     }
 
     return `
-      <details class="shell-item stacked-card favorites-menu favorites-menu-collapse" open>
-        <summary>${escapeHtml(title)}</summary>
-        ${links.map(renderFavoriteLink).join("")}
-      </details>
+      <nav class="shell-item favorites-menu favorites-menu-list" aria-label="${escapeHtml(title)}">
+        <span class="mini-title">${escapeHtml(title)}</span>
+        <div class="favorites-link-list">
+          ${links.map(renderFavoriteTreeLink).join("")}
+        </div>
+      </nav>
     `;
   }
 
   function renderFavoriteLink(link) {
     return `<a href="${escapeHtml(safeHref(link.href, "#"))}">${escapeHtml(link.label)}</a>`;
+  }
+
+  function renderFavoriteTreeLink(link) {
+    return `
+      <a href="#">
+        ${icon(link.label.slice(0, 2))}
+        <span>${escapeHtml(link.label)}</span>
+      </a>
+    `;
   }
 
   function renderWorkspaceSwitcher(instanceId, settings) {
@@ -854,8 +973,8 @@
     }).filter((link) => link.label);
 
     return links.length ? links : [
-      { label: "Müşteri panosu", href: "#/app/records" },
-      { label: "Onay hattı", href: "#/app/workflows" }
+      { label: "Müşteri panosu", href: "#" },
+      { label: "Onay hattı", href: "#" }
     ];
   }
 
