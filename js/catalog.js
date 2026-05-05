@@ -22,6 +22,12 @@
       description: "Sayfa, hizmet veya uygulama alanı seçimi."
     },
     {
+      id: "page-tabs",
+      label: "Sekmeli sayfa seçici",
+      category: "navigation",
+      description: "Üst barda sayfalar arası yatay tab geçişi."
+    },
+    {
       id: "user-menu",
       label: "Kullanıcı menüsü",
       category: "identity",
@@ -101,6 +107,10 @@
       activeWorkspaceId: "benim-sayfam",
       workspacesText: "benim-sayfam|BS|Benim Sayfam\narge|AR|AR-GE\ndanismanlik|DN|Danışmanlık\npentest|PT|Pentest\negitimler|EG|Eğitimler"
     },
+    "page-tabs": {
+      variant: "underline",
+      tabsText: "Pano|#/app/dashboard|table|42\nKayıtlar|#/app/records|file-text|8\nİş akışları|#/app/workflows|activity|16\nYapılandırma|#/config|settings|"
+    },
     "user-menu": { label: "Mimar", initials: "KG", variant: "full" },
     breadcrumbs: { rootLabel: "Stüdyo" },
     "primary-nav": { variant: "vertical" },
@@ -134,6 +144,10 @@
     "workspace-switcher": [
       { key: "eyebrow", label: "Üst etiket", type: "text" },
       { key: "workspacesText", label: "Sayfalar", type: "textarea", hint: "Her satır: id|baş harf|ad" }
+    ],
+    "page-tabs": [
+      { key: "variant", label: "Görünüm", type: "select", options: ["underline", "contained"] },
+      { key: "tabsText", label: "Tablar", type: "textarea", hint: "Her satır: Etiket|href|ikon|rozet" }
     ],
     "user-menu": [
       { key: "variant", label: "Görünüm", type: "select", options: ["full", "avatar"] },

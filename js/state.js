@@ -134,134 +134,7 @@
     }
   };
 
-  const savedLayoutPresets = [
-    {
-      id: "compact-saas",
-      label: "Compact SaaS",
-      description: "Yoğun header, icon-only sol bar ve kapalı sağ/footer alanları.",
-      state: {
-        version: 5,
-        frameLayout: "center",
-        areas: {
-          header: {
-            isOpen: true,
-            mode: "visible",
-            slots: {
-              left: [
-                { id: "saved-saas-brand", itemId: "brand" },
-                { id: "saved-saas-breadcrumbs", itemId: "breadcrumbs" }
-              ],
-              center: [
-                { id: "saved-saas-workspace", itemId: "workspace-switcher" },
-                { id: "saved-saas-search", itemId: "global-search" }
-              ],
-              right: [
-                {
-                  id: "saved-saas-command",
-                  itemId: "button",
-                  settings: { label: "Komutlar", icon: "K", href: "#/config", variant: "iconText", appearance: "secondary" }
-                },
-                { id: "saved-saas-notifications", itemId: "notifications" },
-                { id: "saved-saas-user", itemId: "user-menu", settings: { label: "Mimar", initials: "BS", variant: "avatar" } }
-              ]
-            }
-          },
-          leftBar: {
-            isOpen: true,
-            mode: "icon",
-            slots: {
-              top: [
-                { id: "saved-saas-nav", itemId: "primary-nav", settings: { variant: "compact" } }
-              ],
-              middle: [
-                { id: "saved-saas-tree", itemId: "tree-menu" }
-              ],
-              bottom: []
-            }
-          },
-          rightBar: {
-            isOpen: false,
-            mode: "hidden",
-            slots: {
-              top: [],
-              middle: [],
-              bottom: []
-            }
-          },
-          footer: {
-            isOpen: false,
-            mode: "hidden",
-            slots: {
-              left: [],
-              center: [],
-              right: []
-            }
-          }
-        }
-      }
-    },
-    {
-      id: "left-compact-shell",
-      label: "Sol compact app shell",
-      description: "Sol kompakt header, sidebar üstünde sayfa seçici, yol bilgisi ve tree menü.",
-      state: {
-        version: 5,
-        frameLayout: "classic",
-        areas: {
-          header: {
-            isOpen: true,
-            mode: "left-rail",
-            slots: {
-              left: [
-                { id: "saved-left-compact-brand", itemId: "brand" }
-              ],
-              center: [],
-              right: [
-                {
-                  id: "saved-left-compact-help",
-                  itemId: "button",
-                  settings: { label: "Yardım", icon: "?", href: "#/config", variant: "icon", appearance: "ghost" }
-                },
-                { id: "saved-left-compact-notifications", itemId: "notifications" },
-                { id: "saved-left-compact-user", itemId: "user-menu", settings: { label: "Hesap", initials: "BS", variant: "avatar" } }
-              ]
-            }
-          },
-          leftBar: {
-            isOpen: true,
-            mode: "visible",
-            slots: {
-              top: [
-                { id: "saved-left-compact-workspace", itemId: "workspace-switcher" },
-                { id: "saved-left-compact-search", itemId: "global-search" },
-                { id: "saved-left-compact-tree", itemId: "tree-menu" }
-              ],
-              middle: [],
-              bottom: []
-            }
-          },
-          rightBar: {
-            isOpen: false,
-            mode: "hidden",
-            slots: {
-              top: [],
-              middle: [],
-              bottom: []
-            }
-          },
-          footer: {
-            isOpen: false,
-            mode: "hidden",
-            slots: {
-              left: [],
-              center: [],
-              right: []
-            }
-          }
-        }
-      }
-    }
-  ];
+  const savedLayoutPresets = [];
 
   let state = clone(defaultState);
   let customSavedLayoutPresets = [];
@@ -518,7 +391,7 @@
     return [
       ...savedLayoutPresets,
       ...customSavedLayoutPresets
-    ];
+    ].sort((left, right) => left.label.localeCompare(right.label, "tr", { sensitivity: "base" }));
   }
 
   function isCustomSavedLayout(layoutId) {
@@ -551,7 +424,9 @@
 
   function saveCurrentLayout(label, layoutId = "") {
     const normalizedLabel = String(label || "").trim();
-    const existingIndex = customSavedLayoutPresets.findIndex((layout) => layout.id === layoutId);
+    const targetLayoutId = String(layoutId || "").trim()
+      || (isCustomSavedLayout(activeSavedLayoutId) ? activeSavedLayoutId : "");
+    const existingIndex = customSavedLayoutPresets.findIndex((layout) => layout.id === targetLayoutId);
     const nextLabel = normalizedLabel
       || (existingIndex >= 0 ? customSavedLayoutPresets[existingIndex].label : `Layout ${customSavedLayoutPresets.length + 1}`);
     const nextLayout = {

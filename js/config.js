@@ -181,6 +181,10 @@
   }
 
   function isItemAllowedInArea(areaId, itemId) {
+    if (itemId === "page-tabs") {
+      return areaId === "header";
+    }
+
     if (itemId === "tree-menu") {
       return ns.State.sideAreaIds.has(areaId);
     }

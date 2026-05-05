@@ -385,6 +385,7 @@
       breadcrumbs: { iconName: "breadcrumb", label: routeMeta.label, href: route.name === "config" ? "#/config" : `#/app/${route.page || "dashboard"}` },
       "primary-nav": { text: activeNav.label.slice(0, 2), label: activeNav.label, href: activeNav.href, isActive: true },
       favorites: { iconName: "star", label: settings.title || item.label, href: getFirstLinkHref(settings.linksText, "#/app/records") },
+      "page-tabs": { iconName: "table", label: item.label, href: getFirstPageTabHref(settings.tabsText, "#/app/dashboard") },
       button: getActionButtonCompactSpec(item, settings),
       "icon-button": getActionButtonCompactSpec(item, settings, "+"),
       "icon-text-button": getActionButtonCompactSpec(item, settings),
@@ -627,6 +628,8 @@
         `;
       case "workspace-switcher":
         return renderWorkspaceSwitcher(instance.id, settings);
+      case "page-tabs":
+        return renderPageTabs(settings, route);
       case "user-menu":
         return renderUserMenu(settings);
       case "breadcrumbs":
@@ -675,12 +678,8 @@
         return renderCommandPalette(settings);
       case "notifications":
         return `
-          <button class="shell-item notification-button" type="button">
+          <button class="shell-item notification-button" type="button" aria-label="${escapeHtml(`${settings.count || "0"} bildirim`)}" title="Bildirimler">
             <span class="notification-icon">${svgIcon("bell")}</span>
-            <span class="notification-copy">
-              <strong>Bildirimler</strong>
-              <small>Onay ve görev uyarıları</small>
-            </span>
             <span class="notification-count">${escapeHtml(settings.count || "0")}</span>
           </button>
         `;
@@ -953,6 +952,35 @@
     `;
   }
 
+  function renderPageTabs(settings, route) {
+    const tabs = parsePageTabs(settings.tabsText);
+    const activeTab = tabs.find((tab) => isHrefActive(tab.href, route)) || tabs[0];
+    const variant = settings.variant === "contained" ? "contained" : "underline";
+
+    return `
+      <nav class="shell-item page-tabs page-tabs-${variant}" aria-label="Sekmeli sayfa seçici">
+        ${tabs.map((tab) => `
+          <a class="page-tab ${tab === activeTab ? "is-active" : ""}" href="${escapeHtml(tab.href)}">
+            ${renderPageTabIcon(tab.icon, tab.label)}
+            <span>${escapeHtml(tab.label)}</span>
+            ${tab.badge ? `<small>${escapeHtml(tab.badge)}</small>` : ""}
+          </a>
+        `).join("")}
+      </nav>
+    `;
+  }
+
+  function renderPageTabIcon(iconText, label) {
+    const value = String(iconText || "").trim();
+    const knownIcons = ["table", "file-text", "activity", "chart", "settings", "user", "search", "bell", "star", "filter", "columns", "info"];
+
+    if (knownIcons.includes(value)) {
+      return svgIcon(value);
+    }
+
+    return icon((value || label.slice(0, 2)).slice(0, 3).toUpperCase());
+  }
+
   function parseWorkspaces(value) {
     const workspaces = parseLines(value).map((line, index) => {
       const [id, initials, label] = line.split("|");
@@ -994,6 +1022,31 @@
       { label: "Müşteri panosu", href: "#" },
       { label: "Onay hattı", href: "#" }
     ];
+  }
+
+  function parsePageTabs(value) {
+    const tabs = parseLines(value).map((line, index) => {
+      const [label, href, iconText, badge] = line.split("|");
+      const safeLabel = (label || `Tab ${index + 1}`).trim();
+
+      return {
+        label: safeLabel,
+        href: safeHref(href, "#"),
+        icon: (iconText || safeLabel.slice(0, 2)).trim(),
+        badge: (badge || "").trim()
+      };
+    }).filter((tab) => tab.label);
+
+    return tabs.length ? tabs : [
+      { label: "Pano", href: "#/app/dashboard", icon: "table", badge: "42" },
+      { label: "Kayıtlar", href: "#/app/records", icon: "file-text", badge: "8" },
+      { label: "İş akışları", href: "#/app/workflows", icon: "activity", badge: "16" }
+    ];
+  }
+
+  function getFirstPageTabHref(value, fallback) {
+    const firstTab = parsePageTabs(value)[0];
+    return firstTab ? firstTab.href : fallback;
   }
 
   function parseTreeItems(value) {
