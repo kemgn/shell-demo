@@ -61,10 +61,6 @@
     const isCustomLayout = ns.State.isCustomSavedLayout ? ns.State.isCustomSavedLayout(activeLayoutId) : false;
     const activeCustomLabel = isCustomLayout && activeLayout ? activeLayout.label : "";
 
-    if (!layouts.length) {
-      return "";
-    }
-
     return `
       <div class="saved-layout-picker">
         <span>Kayıtlı layout</span>
