@@ -18,7 +18,7 @@
     {
       id: "workspace-switcher",
       label: "Sayfa seçici",
-      category: "identity",
+      category: "navigation",
       description: "Sayfa, hizmet veya uygulama alanı seçimi."
     },
     {

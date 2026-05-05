@@ -48,14 +48,18 @@
         <div class="shell-toolbar" aria-label="Uygulama kabuğu görünürlük kontrolleri">
           ${renderSavedLayoutPicker()}
           ${ns.State.areas.map((area) => renderToolbarControl(area, state)).join("")}
+          ${renderToolbarConfigLink()}
         </div>
       </div>
     `;
   }
 
   function renderSavedLayoutPicker() {
-    const layouts = ns.State.savedLayoutPresets || [];
+    const layouts = ns.State.getSavedLayouts ? ns.State.getSavedLayouts() : (ns.State.savedLayoutPresets || []);
     const activeLayoutId = ns.State.getActiveSavedLayoutId ? ns.State.getActiveSavedLayoutId() : "default-layout";
+    const activeLayout = layouts.find((layout) => layout.id === activeLayoutId);
+    const isCustomLayout = ns.State.isCustomSavedLayout ? ns.State.isCustomSavedLayout(activeLayoutId) : false;
+    const activeCustomLabel = isCustomLayout && activeLayout ? activeLayout.label : "";
 
     if (!layouts.length) {
       return "";
@@ -71,15 +75,32 @@
               <option value="${escapeHtml(layout.id)}" ${activeLayoutId === layout.id ? "selected" : ""}>${escapeHtml(layout.label)}</option>
             `).join("")}
           </select>
-          <a class="saved-layout-config-link" href="#/config" aria-label="Layout ayar ekranına git" title="Layout ayar ekranı">
-            ${svgIcon("settings")}
-          </a>
           <button class="saved-layout-reset-button" type="button" data-action="reset-config" aria-label="Layout ayarlarını sıfırla" title="Sıfırla">
             ${svgIcon("trash")}
             <span>Sıfırla</span>
           </button>
         </div>
+        <div class="saved-layout-manage">
+          <input type="text" value="${escapeHtml(activeCustomLabel)}" placeholder="Layout adı" aria-label="Kaydedilecek layout adı" data-saved-layout-name>
+          <button class="saved-layout-save-button" type="button" data-action="save-current-layout" data-layout-id="${escapeHtml(isCustomLayout ? activeLayoutId : "")}">
+            ${svgIcon("download")}
+            <span>Kaydet</span>
+          </button>
+          <button class="saved-layout-delete-button" type="button" data-action="delete-saved-layout" data-layout-id="${escapeHtml(activeLayoutId)}" ${isCustomLayout ? "" : "disabled"}>
+            ${svgIcon("trash")}
+            <span>Sil</span>
+          </button>
+        </div>
       </div>
+    `;
+  }
+
+  function renderToolbarConfigLink() {
+    return `
+      <a class="toolbar-config-link" href="#/config" aria-label="Layout ayar ekranına git" title="Layout ayar ekranı">
+        ${svgIcon("settings")}
+        <span>Config ekranı</span>
+      </a>
     `;
   }
 
@@ -341,12 +362,11 @@
 
   function renderCompactUserMenu(settings, className) {
     const label = settings.label || "Mimar";
-    const initials = settings.initials || "KG";
 
     return `
       <details class="${className} compact-item-user-menu account-compact-menu">
         <summary aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
-          <span class="compact-text">${escapeHtml(initials)}</span>
+          <span class="compact-text account-icon-text">${svgIcon("user")}</span>
         </summary>
         ${renderAccountPanel(settings, "compact-account-panel")}
       </details>
@@ -361,7 +381,7 @@
 
     const specs = {
       "global-search": { iconName: "search", label: "Genel arama", href: "" },
-      "user-menu": { text: settings.initials || "KG", label: settings.label || item.label },
+      "user-menu": { iconName: "user", label: settings.label || item.label },
       breadcrumbs: { iconName: "breadcrumb", label: routeMeta.label, href: route.name === "config" ? "#/config" : `#/app/${route.page || "dashboard"}` },
       "primary-nav": { text: activeNav.label.slice(0, 2), label: activeNav.label, href: activeNav.href, isActive: true },
       favorites: { iconName: "star", label: settings.title || item.label, href: getFirstLinkHref(settings.linksText, "#/app/records") },
@@ -715,13 +735,12 @@
 
   function renderUserMenu(settings) {
     const label = settings.label || "Mimar";
-    const initials = settings.initials || "KG";
     const isAvatarOnly = settings.variant === "avatar";
 
     return `
       <details class="shell-item user-menu user-menu-popover ${isAvatarOnly ? "user-menu-avatar" : ""}">
         <summary aria-label="${escapeHtml(label)}" title="${escapeHtml(label)}">
-          <span class="avatar">${escapeHtml(initials)}</span>
+          <span class="avatar account-avatar">${svgIcon("user")}</span>
           ${isAvatarOnly ? "" : `<span>${escapeHtml(label)}</span>`}
         </summary>
         ${renderAccountPanel(settings)}
@@ -731,12 +750,11 @@
 
   function renderAccountPanel(settings, extraClass = "") {
     const label = settings.label || "Mimar";
-    const initials = settings.initials || "KG";
 
     return `
       <div class="account-menu-panel ${extraClass}">
         <div class="account-menu-head">
-          <span class="avatar">${escapeHtml(initials)}</span>
+          <span class="avatar account-avatar">${svgIcon("user")}</span>
           <div>
             <strong>${escapeHtml(label)}</strong>
             <small>Platform mimarı</small>

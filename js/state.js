@@ -2,6 +2,7 @@
   const ns = window.ShellStudio || (window.ShellStudio = {});
 
   const STORAGE_KEY = "shell-demo:v5";
+  const CUSTOM_LAYOUTS_KEY = "shell-demo:custom-layouts:v1";
 
   const areas = [
     { id: "header", label: "Üst bar", axis: "horizontal" },
@@ -263,6 +264,7 @@
   ];
 
   let state = clone(defaultState);
+  let customSavedLayoutPresets = [];
   let activeSavedLayoutId = "default-layout";
   const listeners = new Set();
 
@@ -278,6 +280,12 @@
       itemId,
       settings: ns.Catalog.getDefaultSettings(itemId)
     };
+  }
+
+  function createSavedLayoutId() {
+    const stamp = Date.now().toString(36);
+    const random = Math.random().toString(36).slice(2, 7);
+    return `custom-layout-${stamp}-${random}`;
   }
 
   function getChromeModes(areaId) {
@@ -418,8 +426,50 @@
     next.areas.leftBar.slots.top = orderedItems;
   }
 
+  function normalizeSavedLayout(layout, index) {
+    if (!layout || !layout.state) {
+      return null;
+    }
+
+    const id = String(layout.id || createSavedLayoutId()).trim();
+    const label = String(layout.label || `Kaydedilen layout ${index + 1}`).trim();
+
+    if (!id || !label) {
+      return null;
+    }
+
+    return {
+      id,
+      label,
+      description: String(layout.description || "Kaydedilen özel layout."),
+      state: normalize(layout.state)
+    };
+  }
+
+  function loadCustomLayouts() {
+    try {
+      const raw = window.localStorage.getItem(CUSTOM_LAYOUTS_KEY);
+      const parsed = raw ? JSON.parse(raw) : [];
+
+      customSavedLayoutPresets = Array.isArray(parsed)
+        ? parsed.map(normalizeSavedLayout).filter(Boolean)
+        : [];
+    } catch (error) {
+      customSavedLayoutPresets = [];
+    }
+  }
+
+  function saveCustomLayouts() {
+    try {
+      window.localStorage.setItem(CUSTOM_LAYOUTS_KEY, JSON.stringify(customSavedLayoutPresets));
+    } catch (error) {
+      // Tarayıcı localStorage'ı engellerse kayıtlı layout'lar sadece bellekte kalır.
+    }
+  }
+
   function load() {
     try {
+      loadCustomLayouts();
       const raw = window.localStorage.getItem(STORAGE_KEY);
       state = raw ? normalize(JSON.parse(raw)) : clone(defaultState);
     } catch (error) {
@@ -444,7 +494,9 @@
 
   function commit(mutator) {
     mutator(state);
-    activeSavedLayoutId = "default-layout";
+    if (!isCustomSavedLayout(activeSavedLayoutId)) {
+      activeSavedLayoutId = "default-layout";
+    }
     save();
     emit();
   }
@@ -462,6 +514,17 @@
     return activeSavedLayoutId;
   }
 
+  function getSavedLayouts() {
+    return [
+      ...savedLayoutPresets,
+      ...customSavedLayoutPresets
+    ];
+  }
+
+  function isCustomSavedLayout(layoutId) {
+    return customSavedLayoutPresets.some((layout) => layout.id === layoutId);
+  }
+
   function reset() {
     state = clone(defaultState);
     activeSavedLayoutId = "default-layout";
@@ -477,13 +540,55 @@
   }
 
   function applySavedLayout(layoutId) {
-    const preset = savedLayoutPresets.find((layout) => layout.id === layoutId);
+    const preset = getSavedLayouts().find((layout) => layout.id === layoutId);
 
     if (!preset) {
       return;
     }
 
     applyPreset(preset.state, layoutId);
+  }
+
+  function saveCurrentLayout(label, layoutId = "") {
+    const normalizedLabel = String(label || "").trim();
+    const existingIndex = customSavedLayoutPresets.findIndex((layout) => layout.id === layoutId);
+    const nextLabel = normalizedLabel
+      || (existingIndex >= 0 ? customSavedLayoutPresets[existingIndex].label : `Layout ${customSavedLayoutPresets.length + 1}`);
+    const nextLayout = {
+      id: existingIndex >= 0 ? customSavedLayoutPresets[existingIndex].id : createSavedLayoutId(),
+      label: nextLabel,
+      description: "Kullanıcı tarafından kaydedilen layout.",
+      state: normalize(state)
+    };
+
+    if (existingIndex >= 0) {
+      customSavedLayoutPresets[existingIndex] = nextLayout;
+    } else {
+      customSavedLayoutPresets.push(nextLayout);
+    }
+
+    activeSavedLayoutId = nextLayout.id;
+    saveCustomLayouts();
+    save();
+    emit();
+  }
+
+  function deleteSavedLayout(layoutId) {
+    const nextLayouts = customSavedLayoutPresets.filter((layout) => layout.id !== layoutId);
+
+    if (nextLayouts.length === customSavedLayoutPresets.length) {
+      return;
+    }
+
+    customSavedLayoutPresets = nextLayouts;
+
+    if (activeSavedLayoutId === layoutId) {
+      activeSavedLayoutId = "default-layout";
+    }
+
+    saveCustomLayouts();
+    save();
+    emit();
   }
 
   function toggleArea(areaId) {
@@ -632,13 +737,17 @@
     slotLabels,
     defaultState,
     savedLayoutPresets,
+    getSavedLayouts,
     load,
     get,
     getActiveSavedLayoutId,
+    isCustomSavedLayout,
     subscribe,
     reset,
     applyPreset,
     applySavedLayout,
+    saveCurrentLayout,
+    deleteSavedLayout,
     toggleArea,
     setSideMode,
     setChromeMode,

@@ -93,6 +93,18 @@
         return;
       }
 
+      if (action === "save-current-layout") {
+        const picker = control.closest(".saved-layout-picker");
+        const input = picker ? picker.querySelector("[data-saved-layout-name]") : null;
+        ns.State.saveCurrentLayout(input ? input.value : "", control.dataset.layoutId || "");
+        return;
+      }
+
+      if (action === "delete-saved-layout") {
+        ns.State.deleteSavedLayout(control.dataset.layoutId || "");
+        return;
+      }
+
       if (action === "add-item") {
         const slotEditor = control.closest(".slot-editor");
         const select = slotEditor ? slotEditor.querySelector("[data-add-select]") : null;
